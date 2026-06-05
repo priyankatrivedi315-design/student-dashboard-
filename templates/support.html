@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% block title %}Support — EduVerse Portal{% endblock %}
+{% block content %}
+
+<div class="page-header anim-fade-up">
+  <div class="breadcrumb"><a href="/">Home</a> › Support</div>
+  <h1>Help & Support</h1>
+  <p>We're here to help — reach out any time</p>
+</div>
+
+<div class="grid-3 section anim-fade-up-2">
+  <div class="card support-contact-card" style="border-top: 3px solid var(--accent)">
+    <div class="sc-icon">📞</div>
+    <h3>Student Help Desk</h3>
+    <p class="text-sm text-muted">Mon–Fri 8AM–8PM, Sat 9AM–5PM</p>
+    <div class="sc-contact">+1 (555) 800-HELP</div>
+    <button class="btn btn-primary mt-16" style="width:100%;justify-content:center;">Call Now</button>
+  </div>
+  <div class="card support-contact-card" style="border-top: 3px solid var(--cyan)">
+    <div class="sc-icon">✉️</div>
+    <h3>Email Support</h3>
+    <p class="text-sm text-muted">Response within 24 hours guaranteed</p>
+    <div class="sc-contact">support@eduverse.edu</div>
+    <button class="btn btn-ghost mt-16" style="width:100%;justify-content:center;border-color:var(--cyan);color:var(--cyan)">Send Email</button>
+  </div>
+  <div class="card support-contact-card" style="border-top: 3px solid var(--green)">
+    <div class="sc-icon">💬</div>
+    <h3>Live Chat</h3>
+    <p class="text-sm text-muted">Average wait time: &lt;3 minutes</p>
+    <div class="sc-contact" style="color:var(--green)">● Online Now</div>
+    <button class="btn btn-ghost mt-16" style="width:100%;justify-content:center;border-color:var(--green);color:var(--green)" onclick="document.getElementById('chatFab').click()">Open Chat</button>
+  </div>
+</div>
+
+<!-- FAQ -->
+<section class="section anim-fade-up-3">
+  <h2 class="section-title mb-16">Frequently Asked Questions</h2>
+  <div class="faq-list">
+    {% set faqs = [
+      ("How do I reset my student portal password?", "Go to the login page and click 'Forgot Password'. A reset link will be sent to your registered email address within 5 minutes."),
+      ("When are tuition payments due?", "Tuition is due by January 15 for Spring and August 15 for Fall semesters. Late fees of $50 apply after the due date."),
+      ("How do I request a transcript?", "Visit the Registrar's Office portal or submit a request through your profile page. Processing takes 3–5 business days."),
+      ("Can I change my course schedule after enrollment?", "You may add or drop courses during the first two weeks of the semester (Add/Drop period). Speak with your advisor first."),
+      ("How do I contact my academic advisor?", "Your advisor's email is listed on your Profile page. You can also book appointments through the advising portal."),
+      ("What do I do if I encounter a technical issue?", "Submit a ticket below or contact the IT help desk at it-help@eduverse.edu. Screenshots help us resolve issues faster."),
+    ] %}
+    {% for q, a in faqs %}
+    <div class="faq-item card" onclick="this.classList.toggle('open')">
+      <div class="faq-q">
+        <span>{{ q }}</span>
+        <span class="faq-arrow">›</span>
+      </div>
+      <div class="faq-a text-sm text-muted">{{ a }}</div>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+
+<!-- TICKET FORM -->
+<section class="section anim-fade-up-4">
+  <h2 class="section-title mb-16">Submit a Support Ticket</h2>
+  <div class="card" style="max-width:700px">
+    <div class="ticket-form">
+      <div class="grid-2" style="gap:16px">
+        <div class="form-group">
+          <label class="form-label">Full Name</label>
+          <input type="text" class="form-input" value="{{ student.name }}" readonly>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Student ID</label>
+          <input type="text" class="form-input" value="{{ student.id }}" readonly>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Issue Category</label>
+        <select class="form-input">
+          <option>Select a category…</option>
+          <option>Academic / Enrollment</option>
+          <option>Fees & Financial Aid</option>
+          <option>Technical Issue</option>
+          <option>Library & Resources</option>
+          <option>Other</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Subject</label>
+        <input type="text" class="form-input" placeholder="Brief description of your issue…">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Description</label>
+        <textarea class="form-input" rows="5" placeholder="Please describe your issue in detail. Include any error messages or steps to reproduce the problem."></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Priority</label>
+        <div class="priority-options">
+          <label class="priority-opt">
+            <input type="radio" name="priority" value="low"> <span>Low</span>
+          </label>
+          <label class="priority-opt">
+            <input type="radio" name="priority" value="medium" checked> <span>Medium</span>
+          </label>
+          <label class="priority-opt">
+            <input type="radio" name="priority" value="high"> <span>High — Urgent</span>
+          </label>
+        </div>
+      </div>
+      <button class="btn btn-primary" style="width:100%;justify-content:center;padding:14px;">📤 Submit Ticket</button>
+    </div>
+  </div>
+</section>
+
+<style>
+.support-contact-card { display: flex; flex-direction: column; gap: 6px; }
+.sc-icon { font-size: 36px; margin-bottom: 4px; }
+.support-contact-card h3 { font-size: 16px; font-weight: 700; }
+.sc-contact { font-size: 15px; font-weight: 700; margin-top: 6px; color: var(--text); font-family: var(--font-mono); }
+
+.faq-list { display: flex; flex-direction: column; gap: 10px; }
+.faq-item { cursor: pointer; user-select: none; }
+.faq-q { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-weight: 600; font-size: 14px; }
+.faq-arrow { font-size: 20px; transition: transform 0.25s ease; color: var(--text3); flex-shrink: 0; }
+.faq-a { max-height: 0; overflow: hidden; transition: max-height 0.3s ease, margin-top 0.3s ease; }
+.faq-item.open .faq-arrow { transform: rotate(90deg); }
+.faq-item.open .faq-a { max-height: 200px; margin-top: 12px; }
+
+.form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+.form-label { font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text3); font-weight: 600; }
+.form-input {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  color: var(--text);
+  font-size: 14px;
+  font-family: var(--font-body);
+  outline: none;
+  transition: var(--transition);
+  width: 100%;
+}
+.form-input:focus { border-color: var(--accent); }
+.form-input[readonly] { opacity: 0.6; cursor: not-allowed; }
+textarea.form-input { resize: vertical; }
+.priority-options { display: flex; gap: 12px; flex-wrap: wrap; }
+.priority-opt { display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 14px; }
+.ticket-form { display: flex; flex-direction: column; }
+</style>
+{% endblock %}

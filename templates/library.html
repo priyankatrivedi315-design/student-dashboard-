@@ -1,0 +1,1708 @@
+{% extends "base.html" %}
+{% block title %}Library — EduVerse Portal{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ══════════════════════════════════
+   LIBRARY PAGE STYLES
+══════════════════════════════════ */
+.lib-search-bar {
+  display:flex;align-items:center;gap:10px;
+  background:var(--card);border:1px solid var(--border);
+  border-radius:var(--radius-sm);padding:10px 16px;
+  max-width:680px;margin-bottom:28px;transition:var(--transition);
+}
+.lib-search-bar:focus-within{border-color:var(--accent);}
+.lib-search-bar input{background:none;border:none;outline:none;color:var(--text);font-size:14px;flex:1;}
+.lib-search-bar input::placeholder{color:var(--text3);}
+.lib-card{display:flex;flex-direction:column;gap:8px;cursor:pointer;transition:var(--transition);}
+.lib-card:hover{transform:translateY(-4px);box-shadow:0 10px 30px rgba(0,0,0,0.3);}
+.lib-icon{width:50px;height:50px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:26px;}
+.lib-title{font-weight:700;font-size:15px;}
+.lib-desc{line-height:1.55;}
+
+/* ── Backdrop & Modals ── */
+.lib-backdrop{
+  display:none;position:fixed;inset:0;
+  background:rgba(0,0,0,0.78);z-index:900;
+  backdrop-filter:blur(5px);
+}
+.lib-backdrop.show{display:block;}
+
+.lib-modal{
+  display:none;position:fixed;inset:0;
+  z-index:950;align-items:center;justify-content:center;padding:20px;
+}
+.lib-modal.show{display:flex;}
+
+.lib-modal-box{
+  background:var(--bg2);border:1px solid var(--border2);
+  border-radius:20px;width:100%;max-width:920px;
+  max-height:90vh;display:flex;flex-direction:column;
+  box-shadow:0 30px 90px rgba(0,0,0,0.7),0 0 0 1px rgba(108,99,255,0.1);
+  animation:modalIn 0.3s cubic-bezier(0.4,0,0.2,1);overflow:hidden;
+}
+.lib-modal-box.reader-box{max-width:1050px;height:90vh;}
+@keyframes modalIn{
+  from{opacity:0;transform:scale(0.92) translateY(22px);}
+  to{opacity:1;transform:scale(1) translateY(0);}
+}
+
+/* Modal header */
+.lib-modal-header{
+  padding:26px 30px;display:flex;align-items:center;
+  justify-content:space-between;flex-shrink:0;
+}
+.lmh-icon{font-size:34px;margin-bottom:7px;}
+.lmh-title{font-family:var(--font-display);font-size:22px;font-weight:700;color:#fff;}
+.lmh-sub{font-size:12px;color:rgba(255,255,255,0.65);margin-top:3px;}
+.modal-close{
+  width:34px;height:34px;border-radius:50%;
+  background:rgba(255,255,255,0.14);color:#fff;
+  font-size:13px;display:flex;align-items:center;justify-content:center;
+  transition:var(--transition);flex-shrink:0;cursor:pointer;
+}
+.modal-close:hover{background:rgba(255,255,255,0.28);}
+
+/* Modal body */
+.modal-body{flex:1;overflow-y:auto;padding:22px 28px;}
+.modal-body::-webkit-scrollbar{width:5px;}
+.modal-body::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
+
+/* ── DIGITAL LIBRARY ── */
+.modal-search-row{
+  display:flex;align-items:center;gap:10px;
+  background:var(--bg3);border:1px solid var(--border);
+  border-radius:10px;padding:10px 14px;margin-bottom:18px;
+  transition:var(--transition);
+}
+.modal-search-row:focus-within{border-color:var(--accent);}
+.modal-search-row input{background:none;border:none;outline:none;color:var(--text);font-size:13px;flex:1;}
+.modal-select{
+  background:var(--card2);border:1px solid var(--border);border-radius:8px;
+  color:var(--text2);font-size:12px;padding:5px 9px;outline:none;cursor:pointer;
+}
+
+/* Books grid */
+.books-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+@media(max-width:680px){.books-grid{grid-template-columns:repeat(2,1fr);}}
+
+.book-card{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:14px;overflow:hidden;transition:var(--transition);
+  display:flex;flex-direction:column;
+}
+.book-card:hover{transform:translateY(-5px);box-shadow:0 10px 28px rgba(0,0,0,0.4);border-color:var(--border2);}
+.book-cover{
+  height:118px;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:7px;
+  position:relative;overflow:hidden;
+}
+.book-cover::before{
+  content:'';position:absolute;top:-24px;right:-24px;
+  width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,0.06);
+}
+.book-cover-icon{font-size:32px;}
+.book-cover-title{font-size:9.5px;color:rgba(255,255,255,0.72);text-align:center;padding:0 8px;font-weight:700;line-height:1.3;}
+.book-info{padding:11px;display:flex;flex-direction:column;gap:5px;flex:1;}
+.book-title{font-size:11.5px;font-weight:700;line-height:1.3;}
+.book-author{font-size:10.5px;color:var(--text3);}
+.book-meta{display:flex;align-items:center;gap:5px;margin-top:2px;}
+.book-rating{font-size:9.5px;color:var(--text3);}
+.book-read-btn{
+  margin-top:auto;width:100%;padding:7px;border-radius:8px;
+  font-size:11px;font-weight:700;background:var(--accent);color:#fff;
+  cursor:pointer;border:none;transition:var(--transition);
+  box-shadow:0 3px 10px rgba(108,99,255,0.3);
+}
+.book-read-btn:hover{background:var(--accent2);transform:translateY(-1px);}
+
+/* ── RESEARCH DATABASES ── */
+.db-tabs{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:18px;}
+.db-tab{
+  padding:7px 15px;border-radius:100px;font-size:12px;font-weight:600;
+  background:var(--card);border:1px solid var(--border);color:var(--text2);
+  cursor:pointer;transition:var(--transition);
+}
+.db-tab:hover{color:var(--text);}
+.db-tab.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+
+.db-list{display:flex;flex-direction:column;gap:11px;}
+.db-card{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:12px;padding:15px 18px;
+  display:flex;align-items:center;gap:15px;
+  transition:var(--transition);
+}
+.db-card:hover{border-color:var(--border2);box-shadow:0 4px 18px rgba(0,0,0,0.3);}
+.db-logo{
+  width:54px;height:54px;border-radius:13px;
+  display:flex;align-items:center;justify-content:center;
+  font-weight:800;font-size:13px;flex-shrink:0;
+}
+.db-info{flex:1;display:flex;flex-direction:column;gap:4px;}
+.db-name{font-weight:700;font-size:14px;}
+.db-desc{font-size:12px;color:var(--text2);line-height:1.5;}
+.db-tags{display:flex;gap:5px;flex-wrap:wrap;margin-top:4px;}
+.db-actions{display:flex;flex-direction:column;align-items:flex-end;flex-shrink:0;}
+.db-count{font-size:10px;color:var(--text3);margin-bottom:6px;white-space:nowrap;}
+
+/* Featured papers */
+.papers-section{margin-top:26px;}
+.papers-list{display:flex;flex-direction:column;gap:10px;margin-top:14px;}
+.paper-item{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:10px;padding:14px 16px;transition:var(--transition);
+}
+.paper-item:hover{border-color:var(--border2);}
+.paper-source{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;}
+.paper-title{font-size:13px;font-weight:600;line-height:1.4;}
+.paper-meta{margin-top:4px;font-size:11px;color:var(--text3);}
+
+/* ── COURSE RESERVES ── */
+.reserve-course{margin-bottom:22px;}
+.reserve-course:last-child{margin-bottom:0;}
+.rc-header{display:flex;align-items:center;gap:11px;border-left:3px solid;padding-left:13px;margin-bottom:11px;}
+.rc-icon{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+.rc-course-code{font-weight:700;font-size:13px;}
+.rc-items{display:flex;flex-direction:column;gap:7px;padding-left:13px;}
+.rc-item{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:10px;padding:11px 14px;
+  display:flex;align-items:center;gap:11px;transition:var(--transition);
+}
+.rc-item:hover{border-color:var(--border2);background:var(--card2);}
+.rc-type{
+  font-size:9px;font-weight:700;text-transform:uppercase;
+  letter-spacing:0.07em;padding:3px 8px;border-radius:6px;
+  flex-shrink:0;min-width:50px;text-align:center;
+}
+.rc-ebook   {background:#6C63FF20;color:#6C63FF;}
+.rc-pdf     {background:#FF658420;color:#FF6584;}
+.rc-video   {background:#F7971E20;color:#F7971E;}
+.rc-article {background:#43C6AC20;color:#43C6AC;}
+.rc-item-info{flex:1;display:flex;flex-direction:column;gap:2px;}
+.rc-item-title{font-size:12.5px;font-weight:600;line-height:1.3;}
+.rc-item-detail{font-size:11px;color:var(--text3);}
+
+/* ── BOOK READER ── */
+.reader-toolbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:13px 18px;background:var(--bg3);
+  border-bottom:1px solid var(--border);flex-shrink:0;
+}
+.reader-book-info{display:flex;flex-direction:column;gap:2px;}
+.reader-book-info strong{font-size:14px;}
+.reader-book-info small{color:var(--text3);font-size:11px;}
+.reader-controls{display:flex;gap:7px;align-items:center;}
+.reader-btn{
+  padding:5px 11px;background:var(--card2);border:1px solid var(--border);
+  border-radius:8px;color:var(--text2);font-size:12px;font-family:var(--font-body);
+  cursor:pointer;transition:var(--transition);
+}
+.reader-btn:hover{color:var(--text);border-color:var(--border2);}
+
+.reader-layout{display:flex;flex:1;overflow:hidden;}
+.reader-toc{
+  width:190px;background:var(--bg3);border-right:1px solid var(--border);
+  padding:15px;overflow-y:auto;flex-shrink:0;
+}
+.toc-label{font-size:10px;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);font-weight:700;margin-bottom:11px;}
+.toc-item{
+  display:block;width:100%;text-align:left;padding:8px 10px;
+  font-size:12px;color:var(--text2);border-radius:8px;
+  cursor:pointer;transition:var(--transition);background:none;border:none;font-family:var(--font-body);
+}
+.toc-item:hover{background:var(--card);color:var(--text);}
+.toc-item.active{background:var(--accent-soft);color:var(--accent2);font-weight:600;}
+
+.reader-page{
+  flex:1;padding:38px 56px;overflow-y:auto;
+  display:flex;flex-direction:column;gap:20px;
+}
+.reader-page::-webkit-scrollbar{width:5px;}
+.reader-page::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
+.reader-chapter-title{
+  font-family:var(--font-display);font-size:24px;font-weight:700;
+  line-height:1.2;border-bottom:1px solid var(--border);padding-bottom:14px;
+}
+.reader-body{font-size:15.5px;line-height:1.9;color:var(--text2);max-width:660px;}
+.reader-body p{margin-bottom:16px;}
+.reader-body h3{font-size:17px;font-weight:700;color:var(--text);margin:22px 0 9px;}
+.reader-body code{
+  background:var(--bg3);padding:2px 8px;border-radius:6px;
+  font-family:var(--font-mono);font-size:13px;color:var(--accent2);
+}
+.reader-body em{color:var(--accent2);font-style:italic;}
+.reader-nav{
+  display:flex;align-items:center;justify-content:space-between;
+  padding-top:20px;border-top:1px solid var(--border);margin-top:auto;
+}
+.reader-page-info{font-size:12px;color:var(--text3);font-family:var(--font-mono);}
+/* ── CITATION / REMOTE / LIBRARIAN ── */
+.lib-status-dot{
+  display:inline-block;width:8px;height:8px;border-radius:50%;
+  background:#2ECC89;box-shadow:0 0 0 3px #2ECC8930;
+  animation:pulse 2s ease-in-out infinite;
+}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 3px #2ECC8930;}50%{box-shadow:0 0 0 6px #2ECC8910;}}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header anim-fade-up">
+  <div class="breadcrumb"><a href="/">Home</a> › Library</div>
+  <h1>Library & Resources</h1>
+  <p>Access digital resources, research databases, and study materials</p>
+</div>
+
+<!-- Global search -->
+<div class="lib-search-bar anim-fade-up-2">
+  <span class="search-icon">🔍</span>
+  <input type="text" placeholder="Search books, journals, databases, course materials…">
+  <button class="btn btn-primary" style="padding:7px 18px;font-size:13px;white-space:nowrap;">Search</button>
+</div>
+
+<!-- Stats -->
+<div class="grid-4 section anim-fade-up-2">
+  <div class="stat-card" style="--accent-color:#6C63FF">
+    <div class="stat-icon">📗</div><div class="stat-value">2.4M</div>
+    <div class="stat-label">Books Available</div>
+  </div>
+  <div class="stat-card" style="--accent-color:#43C6AC">
+    <div class="stat-icon">📰</div><div class="stat-value">180K</div>
+    <div class="stat-label">Journal Articles</div>
+  </div>
+  <div class="stat-card" style="--accent-color:#FF6584">
+    <div class="stat-icon">🎥</div><div class="stat-value">12K</div>
+    <div class="stat-label">Video Lectures</div>
+  </div>
+  <div class="stat-card" style="--accent-color:#F7971E">
+    <div class="stat-icon">🖥️</div><div class="stat-value">48</div>
+    <div class="stat-label">Study Rooms</div>
+  </div>
+</div>
+
+<!-- Quick Access cards -->
+<section class="section anim-fade-up-3">
+  <h2 class="section-title mb-16">Quick Access</h2>
+  <div class="grid-3">
+    <div class="card lib-card" onclick="openModal('digitalLibModal')">
+      <div class="lib-icon" style="background:#6C63FF20;color:#6C63FF">📚</div>
+      <h3 class="lib-title">Digital Library</h3>
+      <p class="lib-desc text-sm text-muted">Access 2.4M books and e-books. Click to browse and read instantly.</p>
+      <button class="btn btn-ghost mt-16" style="width:100%;justify-content:center;border-color:#6C63FF40;color:#6C63FF">Access →</button>
+    </div>
+    <div class="card lib-card" onclick="openModal('researchModal')">
+      <div class="lib-icon" style="background:#43C6AC20;color:#43C6AC">🔬</div>
+      <h3 class="lib-title">Research Databases</h3>
+      <p class="lib-desc text-sm text-muted">JSTOR, Springer, IEEE Xplore, PubMed and 40+ curated databases.</p>
+      <button class="btn btn-ghost mt-16" style="width:100%;justify-content:center;border-color:#43C6AC40;color:#43C6AC">Access →</button>
+    </div>
+    <div class="card lib-card" onclick="openModal('reservesModal')">
+      <div class="lib-icon" style="background:#FF658420;color:#FF6584">📖</div>
+      <h3 class="lib-title">Course Reserves</h3>
+      <p class="lib-desc text-sm text-muted">Required readings and materials for all your enrolled courses.</p>
+      <button class="btn btn-ghost mt-16" style="width:100%;justify-content:center;border-color:#FF658440;color:#FF6584">Access →</button>
+    </div>
+    <div class="card lib-card" onclick="openModal('citationModal')">
+      <div class="lib-icon" style="background:#F7971E20;color:#F7971E">🖊️</div>
+      <h3 class="lib-title">Citation Tools</h3>
+      <p class="lib-desc text-sm text-muted">Zotero, EndNote, and MLA/APA/Chicago auto-citation generators.</p>
+      <button class="btn btn-ghost mt-16" style="width:100%;justify-content:center;border-color:#F7971E40;color:#F7971E">Access →</button>
+    </div>
+    <div class="card lib-card" onclick="openModal('remoteModal')">
+      <div class="lib-icon" style="background:#A18CD120;color:#A18CD1">💻</div>
+      <h3 class="lib-title">Remote Access</h3>
+      <p class="lib-desc text-sm text-muted">Access all library resources off-campus with your student login.</p>
+      <button class="btn btn-ghost mt-16" style="width:100%;justify-content:center;border-color:#A18CD140;color:#A18CD1">Access →</button>
+    </div>
+    <div class="card lib-card" onclick="openModal('librarianModal')">
+      <div class="lib-icon" style="background:#56CCF220;color:#56CCF2">🧑‍🏫</div>
+      <h3 class="lib-title">Ask a Librarian</h3>
+      <p class="lib-desc text-sm text-muted">Live chat 8AM–10PM. Email & appointment support available 24/7.</p>
+      <button class="btn btn-ghost mt-16" style="width:100%;justify-content:center;border-color:#56CCF240;color:#56CCF2">Chat Now →</button>
+    </div>
+  </div>
+</section>
+
+<!-- Borrowed books table -->
+<section class="section anim-fade-up-4">
+  <h2 class="section-title mb-16">My Borrowed Items</h2>
+  <div class="card table-wrap">
+    <table>
+      <thead><tr><th>Title</th><th>Author</th><th>Type</th><th>Due Date</th><th>Status</th><th>Action</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>Clean Code</strong></td><td class="text-muted">Robert C. Martin</td>
+          <td><span class="badge badge-purple">Physical</span></td><td>Jun 5, 2026</td>
+          <td><span class="badge badge-green">On Time</span></td>
+          <td><button class="btn btn-ghost text-sm" style="padding:5px 12px;" onclick="openBookReader('Clean Code','Robert C. Martin',0)">📖 Read</button></td>
+        </tr>
+        <tr>
+          <td><strong>Calculus: Early Transcendentals</strong></td><td class="text-muted">James Stewart</td>
+          <td><span class="badge badge-cyan">E-Book</span></td><td>May 28, 2026</td>
+          <td><span class="badge badge-amber">Due Soon</span></td>
+          <td><button class="btn btn-primary text-sm" style="padding:5px 12px;" onclick="openBookReader('Calculus: Early Transcendentals','James Stewart',2)">📖 Read</button></td>
+        </tr>
+        <tr>
+          <td><strong>The Art of War</strong></td><td class="text-muted">Sun Tzu</td>
+          <td><span class="badge badge-purple">Physical</span></td><td>May 10, 2026</td>
+          <td><span class="badge badge-red">Overdue</span></td>
+          <td><button class="btn btn-danger text-sm" style="padding:5px 12px;">Return</button></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+
+<!-- ════════════════════════════════════════════
+     MODAL 1 — DIGITAL LIBRARY
+════════════════════════════════════════════ -->
+<div class="lib-modal" id="digitalLibModal">
+  <div class="lib-modal-box">
+    <div class="lib-modal-header" style="background:linear-gradient(135deg,#3a35c0,#6C63FF)">
+      <div>
+        <div class="lmh-icon">📚</div>
+        <h2 class="lmh-title">Digital Library</h2>
+        <p class="lmh-sub">2,400,000 books · 180,000 journals · Free student access</p>
+      </div>
+      <button class="modal-close" onclick="closeModal('digitalLibModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-search-row">
+        <span>🔍</span>
+        <input type="text" id="bookSearchInput" placeholder="Search by title, author, ISBN…" oninput="filterBooks()">
+        <select id="bookGenreFilter" class="modal-select" onchange="filterBooks()">
+          <option value="">All Genres</option>
+          <option>Computer Science</option>
+          <option>Mathematics</option>
+          <option>Physics</option>
+          <option>History</option>
+          <option>Management</option>
+          <option>Literature</option>
+        </select>
+      </div>
+      <div class="books-grid" id="booksGrid">
+
+        <div class="book-card" data-genre="Computer Science" data-title="clean code">
+          <div class="book-cover" style="background:linear-gradient(135deg,#6C63FF,#3a2a9e)">
+            <span class="book-cover-icon">💻</span>
+            <span class="book-cover-title">Clean Code</span>
+          </div>
+          <div class="book-info">
+            <div class="book-title">Clean Code</div>
+            <div class="book-author">Robert C. Martin</div>
+            <div class="book-meta"><span class="badge badge-purple" style="font-size:9px">CS</span><span class="text-xs text-muted">464 pp</span></div>
+            <div class="book-rating">⭐⭐⭐⭐⭐ <span class="text-xs text-muted">(2,341)</span></div>
+            <button class="book-read-btn" onclick="openBookReader('Clean Code','Robert C. Martin',0)">📖 Read Now</button>
+          </div>
+        </div>
+
+        <div class="book-card" data-genre="Computer Science" data-title="introduction to algorithms">
+          <div class="book-cover" style="background:linear-gradient(135deg,#c0392b,#FF6584)">
+            <span class="book-cover-icon">⚙️</span>
+            <span class="book-cover-title">Intro to Algorithms</span>
+          </div>
+          <div class="book-info">
+            <div class="book-title">Introduction to Algorithms</div>
+            <div class="book-author">Cormen, Leiserson, Rivest</div>
+            <div class="book-meta"><span class="badge badge-red" style="font-size:9px">CS</span><span class="text-xs text-muted">1,292 pp</span></div>
+            <div class="book-rating">⭐⭐⭐⭐⭐ <span class="text-xs text-muted">(4,812)</span></div>
+            <button class="book-read-btn" style="background:#FF6584;box-shadow:0 3px 10px #FF658440;" onclick="openBookReader('Introduction to Algorithms','Cormen et al.',1)">📖 Read Now</button>
+          </div>
+        </div>
+
+        <div class="book-card" data-genre="Mathematics" data-title="calculus early transcendentals">
+          <div class="book-cover" style="background:linear-gradient(135deg,#1a7a6e,#43C6AC)">
+            <span class="book-cover-icon">📐</span>
+            <span class="book-cover-title">Calculus</span>
+          </div>
+          <div class="book-info">
+            <div class="book-title">Calculus: Early Transcendentals</div>
+            <div class="book-author">James Stewart</div>
+            <div class="book-meta"><span class="badge badge-cyan" style="font-size:9px">Math</span><span class="text-xs text-muted">1,368 pp</span></div>
+            <div class="book-rating">⭐⭐⭐⭐ <span class="text-xs text-muted">(3,109)</span></div>
+            <button class="book-read-btn" style="background:#43C6AC;box-shadow:0 3px 10px #43C6AC40;" onclick="openBookReader('Calculus: Early Transcendentals','James Stewart',2)">📖 Read Now</button>
+          </div>
+        </div>
+
+        <div class="book-card" data-genre="Physics" data-title="university physics">
+          <div class="book-cover" style="background:linear-gradient(135deg,#c05a0a,#F7971E)">
+            <span class="book-cover-icon">⚛️</span>
+            <span class="book-cover-title">University Physics</span>
+          </div>
+          <div class="book-info">
+            <div class="book-title">University Physics</div>
+            <div class="book-author">Young & Freedman</div>
+            <div class="book-meta"><span class="badge badge-amber" style="font-size:9px">Physics</span><span class="text-xs text-muted">1,600 pp</span></div>
+            <div class="book-rating">⭐⭐⭐⭐ <span class="text-xs text-muted">(1,876)</span></div>
+            <button class="book-read-btn" style="background:#F7971E;box-shadow:0 3px 10px #F7971E40;" onclick="openBookReader('University Physics','Young & Freedman',3)">📖 Read Now</button>
+          </div>
+        </div>
+
+        <div class="book-card" data-genre="Computer Science" data-title="design patterns">
+          <div class="book-cover" style="background:linear-gradient(135deg,#5a3e8e,#A18CD1)">
+            <span class="book-cover-icon">🏗️</span>
+            <span class="book-cover-title">Design Patterns</span>
+          </div>
+          <div class="book-info">
+            <div class="book-title">Design Patterns</div>
+            <div class="book-author">Gang of Four</div>
+            <div class="book-meta"><span class="badge badge-purple" style="font-size:9px">CS</span><span class="text-xs text-muted">395 pp</span></div>
+            <div class="book-rating">⭐⭐⭐⭐⭐ <span class="text-xs text-muted">(3,567)</span></div>
+            <button class="book-read-btn" onclick="openBookReader('Design Patterns','Gang of Four',4)">📖 Read Now</button>
+          </div>
+        </div>
+
+        <div class="book-card" data-genre="History" data-title="sapiens">
+          <div class="book-cover" style="background:linear-gradient(135deg,#1a6e99,#56CCF2)">
+            <span class="book-cover-icon">🌍</span>
+            <span class="book-cover-title">Sapiens</span>
+          </div>
+          <div class="book-info">
+            <div class="book-title">Sapiens: A Brief History</div>
+            <div class="book-author">Yuval Noah Harari</div>
+            <div class="book-meta"><span class="badge badge-cyan" style="font-size:9px">History</span><span class="text-xs text-muted">443 pp</span></div>
+            <div class="book-rating">⭐⭐⭐⭐⭐ <span class="text-xs text-muted">(8,921)</span></div>
+            <button class="book-read-btn" style="background:#56CCF2;box-shadow:0 3px 10px #56CCF240;" onclick="openBookReader('Sapiens','Yuval Noah Harari',5)">📖 Read Now</button>
+          </div>
+        </div>
+
+        <div class="book-card" data-genre="Management" data-title="good to great">
+          <div class="book-cover" style="background:linear-gradient(135deg,#1a7a4e,#2ECC89)">
+            <span class="book-cover-icon">📊</span>
+            <span class="book-cover-title">Good to Great</span>
+          </div>
+          <div class="book-info">
+            <div class="book-title">Good to Great</div>
+            <div class="book-author">Jim Collins</div>
+            <div class="book-meta"><span class="badge badge-green" style="font-size:9px">Mgmt</span><span class="text-xs text-muted">320 pp</span></div>
+            <div class="book-rating">⭐⭐⭐⭐ <span class="text-xs text-muted">(5,203)</span></div>
+            <button class="book-read-btn" style="background:#2ECC89;box-shadow:0 3px 10px #2ECC8940;" onclick="openBookReader('Good to Great','Jim Collins',6)">📖 Read Now</button>
+          </div>
+        </div>
+
+        <div class="book-card" data-genre="Literature" data-title="the great gatsby">
+          <div class="book-cover" style="background:linear-gradient(135deg,#9a7010,#FFE066,#c0932b)">
+            <span class="book-cover-icon">✍️</span>
+            <span class="book-cover-title">The Great Gatsby</span>
+          </div>
+          <div class="book-info">
+            <div class="book-title">The Great Gatsby</div>
+            <div class="book-author">F. Scott Fitzgerald</div>
+            <div class="book-meta"><span class="badge badge-amber" style="font-size:9px">Lit</span><span class="text-xs text-muted">180 pp</span></div>
+            <div class="book-rating">⭐⭐⭐⭐ <span class="text-xs text-muted">(12,034)</span></div>
+            <button class="book-read-btn" style="background:#c0932b;box-shadow:0 3px 10px #c0932b40;" onclick="openBookReader('The Great Gatsby','F. Scott Fitzgerald',7)">📖 Read Now</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════════
+     MODAL 2 — RESEARCH DATABASES
+════════════════════════════════════════════ -->
+<div class="lib-modal" id="researchModal">
+  <div class="lib-modal-box" style="max-width:900px;">
+    <div class="lib-modal-header" style="background:linear-gradient(135deg,#1a7a6e,#43C6AC)">
+      <div>
+        <div class="lmh-icon">🔬</div>
+        <h2 class="lmh-title">Research Databases</h2>
+        <p class="lmh-sub">40+ curated academic databases · Peer-reviewed sources only</p>
+      </div>
+      <button class="modal-close" onclick="closeModal('researchModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="db-tabs">
+        <button class="db-tab active" onclick="switchDB(this,'all')">All Databases</button>
+        <button class="db-tab" onclick="switchDB(this,'science')">Science & Tech</button>
+        <button class="db-tab" onclick="switchDB(this,'humanities')">Humanities</button>
+        <button class="db-tab" onclick="switchDB(this,'medical')">Medical</button>
+        <button class="db-tab" onclick="switchDB(this,'business')">Business</button>
+      </div>
+
+      <div class="db-list">
+        <div class="db-card" data-cat="science">
+          <div class="db-logo" style="background:#6C63FF20;color:#6C63FF;font-size:13px;">IEEE</div>
+          <div class="db-info">
+            <div class="db-name">IEEE Xplore</div>
+            <div class="db-desc">5M+ technical documents on electrical engineering, computer science, and electronics. Includes conference papers, standards, and IEEE/IET publications.</div>
+            <div class="db-tags"><span class="badge badge-purple" style="font-size:9px">CS</span><span class="badge badge-purple" style="font-size:9px">Engineering</span><span class="badge badge-purple" style="font-size:9px">Electronics</span></div>
+          </div>
+          <div class="db-actions">
+            <div class="db-count">5M+ Papers</div>
+            <button class="btn btn-primary" style="font-size:12px;padding:7px 14px;" onclick="openResearchDB('IEEE Xplore','💡')">Open →</button>
+          </div>
+        </div>
+
+        <div class="db-card" data-cat="science humanities">
+          <div class="db-logo" style="background:#43C6AC20;color:#43C6AC;font-size:14px;font-weight:900;">JSTOR</div>
+          <div class="db-info">
+            <div class="db-name">JSTOR</div>
+            <div class="db-desc">Digital library of 12M+ academic journals, books, and primary sources across disciplines including arts, humanities, social sciences, and ecology.</div>
+            <div class="db-tags"><span class="badge badge-cyan" style="font-size:9px">Humanities</span><span class="badge badge-cyan" style="font-size:9px">Social Science</span><span class="badge badge-cyan" style="font-size:9px">Arts</span></div>
+          </div>
+          <div class="db-actions">
+            <div class="db-count">12M+ Items</div>
+            <button class="btn btn-primary" style="font-size:12px;padding:7px 14px;background:#43C6AC;box-shadow:0 4px 12px #43C6AC40;" onclick="openResearchDB('JSTOR','📚')">Open →</button>
+          </div>
+        </div>
+
+        <div class="db-card" data-cat="science">
+          <div class="db-logo" style="background:#FF658420;color:#FF6584;font-size:20px;">🌿</div>
+          <div class="db-info">
+            <div class="db-name">Springer Nature</div>
+            <div class="db-desc">Over 10 million scientific documents: journals, books, protocols, and reference works covering sciences, technology, medicine, and humanities.</div>
+            <div class="db-tags"><span class="badge badge-pink" style="font-size:9px">Science</span><span class="badge badge-pink" style="font-size:9px">Biology</span><span class="badge badge-pink" style="font-size:9px">Medicine</span></div>
+          </div>
+          <div class="db-actions">
+            <div class="db-count">10M+ Articles</div>
+            <button class="btn btn-primary" style="font-size:12px;padding:7px 14px;background:#FF6584;box-shadow:0 4px 12px #FF658440;" onclick="openResearchDB('Springer Nature','🌿')">Open →</button>
+          </div>
+        </div>
+
+        <div class="db-card" data-cat="medical">
+          <div class="db-logo" style="background:#2ECC8920;color:#2ECC89;font-size:20px;">🏥</div>
+          <div class="db-info">
+            <div class="db-name">PubMed / MEDLINE</div>
+            <div class="db-desc">35M+ biomedical and life sciences citations maintained by the National Library of Medicine. Covers clinical medicine, public health, biochemistry, and nursing.</div>
+            <div class="db-tags"><span class="badge badge-green" style="font-size:9px">Medicine</span><span class="badge badge-green" style="font-size:9px">Biology</span><span class="badge badge-green" style="font-size:9px">Public Health</span></div>
+          </div>
+          <div class="db-actions">
+            <div class="db-count">35M+ Citations</div>
+            <button class="btn btn-primary" style="font-size:12px;padding:7px 14px;background:#2ECC89;box-shadow:0 4px 12px #2ECC8940;" onclick="openResearchDB('PubMed','🏥')">Open →</button>
+          </div>
+        </div>
+
+        <div class="db-card" data-cat="business">
+          <div class="db-logo" style="background:#F7971E20;color:#F7971E;font-size:20px;">📈</div>
+          <div class="db-info">
+            <div class="db-name">Business Source Complete</div>
+            <div class="db-desc">Full text for 3,300+ business publications. Covers accounting, economics, finance, management, marketing, and international business from leading journals.</div>
+            <div class="db-tags"><span class="badge badge-amber" style="font-size:9px">Business</span><span class="badge badge-amber" style="font-size:9px">Economics</span><span class="badge badge-amber" style="font-size:9px">Finance</span></div>
+          </div>
+          <div class="db-actions">
+            <div class="db-count">3,300+ Journals</div>
+            <button class="btn btn-primary" style="font-size:12px;padding:7px 14px;background:#F7971E;box-shadow:0 4px 12px #F7971E40;" onclick="openResearchDB('Business Source','📈')">Open →</button>
+          </div>
+        </div>
+
+        <div class="db-card" data-cat="science">
+          <div class="db-logo" style="background:#A18CD120;color:#A18CD1;font-size:13px;font-weight:900;">arXiv</div>
+          <div class="db-info">
+            <div class="db-name">arXiv (Open Access)</div>
+            <div class="db-desc">Free distribution of 2M+ preprint scholarly articles in physics, mathematics, computer science, quantitative biology, and statistics. Curated by Cornell University.</div>
+            <div class="db-tags"><span class="badge badge-purple" style="font-size:9px">Open Access</span><span class="badge badge-purple" style="font-size:9px">CS</span><span class="badge badge-purple" style="font-size:9px">Physics</span></div>
+          </div>
+          <div class="db-actions">
+            <div class="db-count">2M+ Preprints</div>
+            <button class="btn btn-primary" style="font-size:12px;padding:7px 14px;background:#A18CD1;box-shadow:0 4px 12px #A18CD140;" onclick="openResearchDB('arXiv','📄')">Open →</button>
+          </div>
+        </div>
+
+        <div class="db-card" data-cat="humanities">
+          <div class="db-logo" style="background:#56CCF220;color:#56CCF2;font-size:20px;">🎭</div>
+          <div class="db-info">
+            <div class="db-name">MLA International Bibliography</div>
+            <div class="db-desc">Comprehensive index of journal articles, books, and dissertations on literature, language, linguistics, and folklore. 3.4M+ records from 4,400+ publications worldwide.</div>
+            <div class="db-tags"><span class="badge badge-cyan" style="font-size:9px">Literature</span><span class="badge badge-cyan" style="font-size:9px">Linguistics</span></div>
+          </div>
+          <div class="db-actions">
+            <div class="db-count">3.4M+ Records</div>
+            <button class="btn btn-primary" style="font-size:12px;padding:7px 14px;background:#56CCF2;box-shadow:0 4px 12px #56CCF240;" onclick="openResearchDB('MLA Bibliography','🎭')">Open →</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Featured papers -->
+      <div class="papers-section">
+        <div class="section-header">
+          <h3 class="fw-700" style="font-size:15px;">📌 Featured Research Papers — Recommended for You</h3>
+        </div>
+        <div class="papers-list">
+          <div class="paper-item">
+            <div class="paper-source" style="color:#6C63FF">IEEE Xplore · Computer Science</div>
+            <div class="paper-title">"Attention Is All You Need" — The Transformer Architecture Revolutionizing Deep Learning</div>
+            <div class="paper-meta">Vaswani, Shazeer, Parmar et al. · NeurIPS 2017 · 65,000+ citations · <em>Highly relevant to CS301</em></div>
+            <button class="btn btn-ghost" style="font-size:11px;padding:4px 10px;margin-top:7px;color:#6C63FF;border-color:#6C63FF30;">View Paper →</button>
+          </div>
+          <div class="paper-item">
+            <div class="paper-source" style="color:#43C6AC">JSTOR · Philosophy of Science</div>
+            <div class="paper-title">"The Structure of Scientific Revolutions" — How Paradigm Shifts Drive Scientific Progress</div>
+            <div class="paper-meta">Thomas S. Kuhn · University of Chicago Press · 1962 · 90,000+ citations</div>
+            <button class="btn btn-ghost" style="font-size:11px;padding:4px 10px;margin-top:7px;color:#43C6AC;border-color:#43C6AC30;">View Paper →</button>
+          </div>
+          <div class="paper-item">
+            <div class="paper-source" style="color:#2ECC89">PubMed · Biotechnology</div>
+            <div class="paper-title">"Genome-scale CRISPR-Cas9 Knockout Screening in Human Cells" — Nature Biotechnology</div>
+            <div class="paper-meta">Shalem et al. · 2014 · 12,000+ citations · Open Access</div>
+            <button class="btn btn-ghost" style="font-size:11px;padding:4px 10px;margin-top:7px;color:#2ECC89;border-color:#2ECC8930;">View Paper →</button>
+          </div>
+          <div class="paper-item">
+            <div class="paper-source" style="color:#F7971E">Business Source Complete · Management</div>
+            <div class="paper-title">"Disruptive Innovation: How Established Companies Can Predict and Prepare for Change"</div>
+            <div class="paper-meta">Clayton Christensen · Harvard Business Review · 2023 · 3,400+ citations · <em>Relevant to BUS301</em></div>
+            <button class="btn btn-ghost" style="font-size:11px;padding:4px 10px;margin-top:7px;color:#F7971E;border-color:#F7971E30;">View Paper →</button>
+          </div>
+          <div class="paper-item">
+            <div class="paper-source" style="color:#A18CD1">arXiv · Computer Science</div>
+            <div class="paper-title">"Deep Residual Learning for Image Recognition" — ResNet Architecture (152 Layers)</div>
+            <div class="paper-meta">He, Zhang, Ren, Sun · CVPR 2016 · 120,000+ citations · Open Access</div>
+            <button class="btn btn-ghost" style="font-size:11px;padding:4px 10px;margin-top:7px;color:#A18CD1;border-color:#A18CD130;">View Paper →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════════
+     MODAL 3 — COURSE RESERVES
+════════════════════════════════════════════ -->
+<div class="lib-modal" id="reservesModal">
+  <div class="lib-modal-box" style="max-width:860px;">
+    <div class="lib-modal-header" style="background:linear-gradient(135deg,#b5294a,#FF6584)">
+      <div>
+        <div class="lmh-icon">📖</div>
+        <h2 class="lmh-title">Course Reserves</h2>
+        <p class="lmh-sub">Required materials for your 6 enrolled courses · Instant digital access</p>
+      </div>
+      <button class="modal-close" onclick="closeModal('reservesModal')">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <!-- CS101 -->
+      <div class="reserve-course">
+        <div class="rc-header" style="border-left-color:#6C63FF">
+          <div class="rc-icon" style="background:#6C63FF20;color:#6C63FF">💻</div>
+          <div>
+            <div class="rc-course-code" style="color:#6C63FF">CS101 — Introduction to Computer Science</div>
+            <div class="text-xs text-muted">Dr. Sarah Mitchell · Mon/Wed 10:00–11:30 · 4 materials</div>
+          </div>
+        </div>
+        <div class="rc-items">
+          <div class="rc-item">
+            <span class="rc-type rc-ebook">E-Book</span>
+            <div class="rc-item-info">
+              <div class="rc-item-title">Computer Science: An Overview, 13th Ed. — Brookshear & Brylow</div>
+              <div class="rc-item-detail">Required · Chapters 1–5 this week · Full text available</div>
+            </div>
+            <button class="btn btn-primary" style="font-size:11px;padding:6px 12px;white-space:nowrap;" onclick="openBookReader('CS Overview','Brookshear',0)">📖 Read</button>
+          </div>
+          <div class="rc-item">
+            <span class="rc-type rc-pdf">PDF</span>
+            <div class="rc-item-info">
+              <div class="rc-item-title">Lecture Slides Week 1–8 (Compiled PDF, 142 pages)</div>
+              <div class="rc-item-detail">Dr. Mitchell · Updated May 20, 2026 · Required reading</div>
+            </div>
+            <button class="btn btn-ghost" style="font-size:11px;padding:6px 12px;white-space:nowrap;color:#6C63FF;border-color:#6C63FF30;">⬇ Download</button>
+          </div>
+          <div class="rc-item">
+            <span class="rc-type rc-video">Video</span>
+            <div class="rc-item-info">
+              <div class="rc-item-title">MIT OCW 6.001: Structure and Interpretation of Computer Programs</div>
+              <div class="rc-item-detail">MIT OpenCourseWare · 25 lectures · 1h 20m avg · Supplementary</div>
+            </div>
+            <button class="btn btn-ghost" style="font-size:11px;padding:6px 12px;white-space:nowrap;color:#F7971E;border-color:#F7971E30;">▶ Watch</button>
+          </div>
+          <div class="rc-item">
+            <span class="rc-type rc-article">Article</span>
+            <div class="rc-item-info">
+              <div class="rc-item-title">"Computing Machinery and Intelligence" — Alan Turing, Mind Journal, 1950</div>
+              <div class="rc-item-detail">Classic Paper · Foundational CS reading · Supplementary</div>
+            </div>
+            <button class="btn btn-ghost" style="font-size:11px;padding:6px 12px;white-space:nowrap;color:#43C6AC;border-color:#43C6AC30;">📄 Read</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- MATH201 -->
+      <div class="reserve-course">
+        <div class="rc-header" style="border-left-color:#FF6584">
+          <div class="rc-icon" style="background:#FF658420;color:#FF6584">📐</div>
+          <div>
+            <div class="rc-course-code" style="color:#FF6584">MATH201 — Calculus II</div>
+            <div class="text-xs text-muted">Prof. James Chen · Tue/Thu 9:00–10:30 · 3 materials</div>
+          </div>
+        </div>
+        <div class="rc-items">
+          <div class="rc-item">
+            <span class="rc-type rc-ebook">E-Book</span>
+            <div class="rc-item-info">
+              <div class="rc-item-title">Calculus: Early Transcendentals, 9th Ed. — James Stewart</div>
+              <div class="rc-item-detail">Required · Chapters 7–12 this semester · Chapters 7–9 this week</div>
+            </div>
+            <button class="btn btn-primary" style="font-size:11px;padding:6px 12px;white-space:nowrap;background:#FF6584;box-shadow:0 4px 10px #FF658440;" onclick="openBookReader('Calculus: Early Transcendentals','James Stewart',2)">📖 Read</button>
+          </div>
+          <div class="rc-item">
+            <span class="rc-type rc-pdf">PDF</span>
+            <div class="rc-item-info">
+              <div class="rc-item-title">Integration Techniques — Practice Problem Sets 1–6 (60 problems with solutions)</div>
+              <div class="rc-item-detail">Prof. Chen · Required practice · Exam prep</div>
+            </div>
+            <button class="btn btn-ghost" style="font-size:11px;padding:6px 12px;white-space:nowrap;color:#FF6584;border-color:#FF658430;">⬇ Download</button>
+          </div>
+          <div class="rc-item">
+            <span class="rc-type rc-video">Video</span>
+            <div class="rc-item-info">
+              <div class="rc-item-title">Khan Academy: Integral Calculus Complete Course (90 videos)</div>
+              <div class="rc-item-detail">Sal Khan · Recommended · Covers all exam topics</div>
+            </div>
+            <button class="btn btn-ghost" style="font-size:11px;padding:6px 12px;white-space:nowrap;color:#F7971E;border-color:#F7971E30;">▶ Watch</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- PHY150 -->
+      <div class="reserve-course">
+        <div class="rc-header" style="border-left-color:#F7971E">
+          <div class="rc-icon" style="background:#F7971E20;color:#F7971E">⚛️</div>
+          <div>
+            <div class="rc-course-code" style="color:#F7971E">PHY150 — Physics: Mechanics</div>
+            <div class="text-xs text-muted">Prof. Alan Torres · Tue/Thu 11:00–12:30 · 4 materials</div>
+          </div>
+        </div>
+        <div class="rc-items">
+          <div class="rc-item">
+            <span class="rc-type rc-ebook">E-Book</span>
+            <div class="rc-item-info">
+              <div class="rc-item-title">University Physics with Modern Physics, 15th Ed. — Young & Freedman (Vol. 1)</div>
+              <div class="rc-item-detail">Required · Chapters 1–14 (Mechanics) · Volume 1 only</div>
+            </div>
+            <button class="btn btn-primary" style="font-size:11px;padding:6px 12px;white-space:nowrap;background:#F7971E;box-shadow:0 4px 10px #F7971E40;" onclick="openBookReader('University Physics','Young & Freedman',3)">📖 Read</button>
+          </div>
+          <div class="rc-item">
+            <span class="rc-type rc-pdf">PDF</span>
+            <div class="rc-item-info">
+              <div class="rc-item-title">Lab Manual: Kinematics & Newton's Laws — 8 Experiments with Data Sheets</div>
+              <div class="rc-item-detail">Dept. of Physics · Required for all lab sessions · Bring printed copy</div>
+            </div>
+            <button class="btn btn-ghost" style="font-size:11px;padding:6px 12px;white-space:nowrap;color:#F7971E;border-color:#F7971E30;">⬇ Download</button>
+          </div>
+          <div class="rc-item">
+            <span class="rc-type rc-video">Video</span>
+            <div class="rc-item-info">
+              <div class="rc-item-title">Prof. Walter Lewin: 8.01 Classical Mechanics Lectures (MIT, 35 lectures)</div>
+              <div class="rc-item-detail">MIT OCW · Highly Recommended by Prof. Torres · Complete course</div>
+            </div>
+            <button class="btn btn-ghost" style="font-size:11px;padding:6px 12px;white-space:nowrap;color:#F7971E;border-color:#F7971E30;">▶ Watch</button>
+          </div>
+          <div class="rc-item">
+            <span class="rc-type rc-article">Article</span>
+            <div class="rc-item-info">
+              <div class="rc-item-title">"Newton's Three Laws of Motion: A Historical Perspective" — American Journal of Physics</div>
+              <div class="rc-item-detail">Supplementary · Historical context for exam essay question</div>
+            </div>
+            <button class="btn btn-ghost" style="font-size:11px;padding:6px 12px;white-space:nowrap;color:#43C6AC;border-color:#43C6AC30;">📄 Read</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ENG110 -->
+      <div class="reserve-course">
+        <div class="rc-header" style="border-left-color:#43C6AC">
+          <div class="rc-icon" style="background:#43C6AC20;color:#43C6AC">✍️</div>
+          <div>
+            <div class="rc-course-code" style="color:#43C6AC">ENG110 — Technical Writing</div>
+            <div class="text-xs text-muted">Dr. Priya Nair · Mon/Wed/Fri 2:00–3:00 · 3 materials</div>
+          </div>
+        </div>
+        <div class="rc-items">
+          <div class="rc-item">
+            <span class="rc-type rc-ebook">E-Book</span>
+            <div class="rc-item-info">
+              <div class="rc-item-title">Technical Communication: A Practical Approach, 9th Ed. — Pfeiffer & Adkins</div>
+              <div class="rc-item-detail">Required · All chapters · Focus on Chapters 8–12 for final report</div>
+            </div>
+            <button class="btn btn-primary" style="font-size:11px;padding:6px 12px;white-space:nowrap;background:#43C6AC;box-shadow:0 4px 10px #43C6AC40;" onclick="openBookReader('Technical Communication','Pfeiffer',0)">📖 Read</button>
+          </div>
+          <div class="rc-item">
+            <span class="rc-type rc-pdf">PDF</span>
+            <div class="rc-item-info">
+              <div class="rc-item-title">IEEE Writing Style Guide for Engineers & Scientists (2023 Edition)</div>
+              <div class="rc-item-detail">IEEE · Mandatory reference for all written assignments</div>
+            </div>
+            <button class="btn btn-ghost" style="font-size:11px;padding:6px 12px;white-space:nowrap;color:#43C6AC;border-color:#43C6AC30;">⬇ Download</button>
+          </div>
+          <div class="rc-item">
+            <span class="rc-type rc-article">Article</span>
+            <div class="rc-item-info">
+              <div class="rc-item-title">"Writing in the Sciences" — Stanford Online (Kristin Sainani) — Free via Library</div>
+              <div class="rc-item-detail">Coursera · 8 modules · Highly recommended for final report</div>
+            </div>
+            <button class="btn btn-ghost" style="font-size:11px;padding:6px 12px;white-space:nowrap;color:#43C6AC;border-color:#43C6AC30;">🔗 Access</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- HIS205 -->
+      <div class="reserve-course">
+        <div class="rc-header" style="border-left-color:#A18CD1">
+          <div class="rc-icon" style="background:#A18CD120;color:#A18CD1">🌍</div>
+          <div>
+            <div class="rc-course-code" style="color:#A18CD1">HIS205 — World History: Modern Era</div>
+            <div class="text-xs text-muted">Dr. Mei Liu · Mon/Wed 1:00–2:30 · 3 materials</div>
+          </div>
+        </div>
+        <div class="rc-items">
+          <div class="rc-item">
+            <span class="rc-type rc-ebook">E-Book</span>
+            <div class="rc-item-info">
+              <div class="rc-item-title">Sapiens: A Brief History of Humankind — Yuval Noah Harari</div>
+              <div class="rc-item-detail">Required · Parts 3 & 4 this month · Full e-book available</div>
+            </div>
+            <button class="btn btn-primary" style="font-size:11px;padding:6px 12px;white-space:nowrap;background:#A18CD1;box-shadow:0 4px 10px #A18CD140;" onclick="openBookReader('Sapiens','Yuval Noah Harari',5)">📖 Read</button>
+          </div>
+          <div class="rc-item">
+            <span class="rc-type rc-article">Article</span>
+            <div class="rc-item-info">
+              <div class="rc-item-title">"The Causes of the Industrial Revolution" — JSTOR · Economic History Review</div>
+              <div class="rc-item-detail">Required · Essay topic background · 24-page article</div>
+            </div>
+            <button class="btn btn-ghost" style="font-size:11px;padding:6px 12px;white-space:nowrap;color:#43C6AC;border-color:#43C6AC30;">📄 Read</button>
+          </div>
+          <div class="rc-item">
+            <span class="rc-type rc-pdf">PDF</span>
+            <div class="rc-item-info">
+              <div class="rc-item-title">Primary Sources Packet: WWI, WWII & Cold War Documents (Selected)</div>
+              <div class="rc-item-detail">Dr. Liu · 80-page packet · Required for class discussions</div>
+            </div>
+            <button class="btn btn-ghost" style="font-size:11px;padding:6px 12px;white-space:nowrap;color:#A18CD1;border-color:#A18CD130;">⬇ Download</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════════
+     MODAL 4 — CITATION TOOLS
+════════════════════════════════════════════ -->
+<div class="lib-modal" id="citationModal">
+  <div class="lib-modal-box" style="max-width:880px;">
+    <div class="lib-modal-header" style="background:linear-gradient(135deg,#b56a00,#F7971E)">
+      <div>
+        <div class="lmh-icon">🖊️</div>
+        <h2 class="lmh-title">Citation Tools</h2>
+        <p class="lmh-sub">Generate, manage, and export citations in any style · Free for all students</p>
+      </div>
+      <button class="modal-close" onclick="closeModal('citationModal')">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <!-- Quick Generator -->
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px 22px;margin-bottom:22px;">
+        <h3 style="font-size:14px;font-weight:700;margin-bottom:14px;">⚡ Quick Citation Generator</h3>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
+          <select id="citStyle" class="modal-select" style="font-size:13px;padding:8px 12px;">
+            <option>APA 7th Edition</option>
+            <option>MLA 9th Edition</option>
+            <option>Chicago 17th Edition</option>
+            <option>Harvard</option>
+            <option>IEEE</option>
+            <option>Vancouver</option>
+          </select>
+          <select id="citType" class="modal-select" style="font-size:13px;padding:8px 12px;">
+            <option>Journal Article</option>
+            <option>Book</option>
+            <option>Website</option>
+            <option>Conference Paper</option>
+            <option>Thesis / Dissertation</option>
+          </select>
+        </div>
+        <div class="modal-search-row" style="margin-bottom:10px;">
+          <span>🔍</span>
+          <input type="text" id="citInput" placeholder="Paste a DOI, URL, ISBN, or article title…">
+        </div>
+        <button class="btn btn-primary" style="font-size:13px;" onclick="generateCitation()">Generate Citation</button>
+        <div id="citResult" style="margin-top:14px;display:none;">
+          <div style="background:var(--bg3);border:1px solid var(--border2);border-radius:10px;padding:14px 16px;">
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);margin-bottom:7px;" id="citStyleLabel">APA 7th Edition</div>
+            <div id="citOutput" style="font-size:13px;line-height:1.7;color:var(--text);"></div>
+            <div style="display:flex;gap:8px;margin-top:12px;">
+              <button class="btn btn-ghost" style="font-size:11px;padding:5px 12px;" onclick="copyCitation()">📋 Copy</button>
+              <button class="btn btn-ghost" style="font-size:11px;padding:5px 12px;" onclick="addToLibrary()">➕ Add to My Library</button>
+              <button class="btn btn-ghost" style="font-size:11px;padding:5px 12px;">⬇ Export RIS</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Citation Management Apps -->
+      <h3 style="font-size:14px;font-weight:700;margin-bottom:12px;">📦 Citation Management Software</h3>
+      <div class="db-list">
+        <div class="db-card">
+          <div class="db-logo" style="background:#FF6B3520;color:#FF6B35;font-size:22px;">🦊</div>
+          <div class="db-info">
+            <div class="db-name">Zotero <span class="badge badge-green" style="font-size:9px;margin-left:6px;">Free · Recommended</span></div>
+            <div class="db-desc">Open-source reference manager. Automatically saves sources from your browser, generates bibliographies, syncs across devices, and integrates with Word & Google Docs. 300MB free cloud storage with your student account.</div>
+            <div class="db-tags"><span class="badge badge-amber" style="font-size:9px">Browser Plugin</span><span class="badge badge-amber" style="font-size:9px">Word/Docs Plugin</span><span class="badge badge-amber" style="font-size:9px">Cloud Sync</span><span class="badge badge-amber" style="font-size:9px">Group Libraries</span></div>
+          </div>
+          <div class="db-actions">
+            <div class="db-count">Free</div>
+            <button class="btn btn-primary" style="font-size:12px;padding:7px 14px;background:#F7971E;box-shadow:0 4px 12px #F7971E40;">Download →</button>
+          </div>
+        </div>
+
+        <div class="db-card">
+          <div class="db-logo" style="background:#6C63FF20;color:#6C63FF;font-size:22px;">📎</div>
+          <div class="db-info">
+            <div class="db-name">EndNote <span class="badge badge-purple" style="font-size:9px;margin-left:6px;">Free via Library</span></div>
+            <div class="db-desc">Industry-standard reference tool for serious researchers. Connect directly to library databases, manage thousands of references, and use advanced PDF annotation. Full desktop version free with your student credentials.</div>
+            <div class="db-tags"><span class="badge badge-purple" style="font-size:9px">PDF Annotation</span><span class="badge badge-purple" style="font-size:9px">Database Integration</span><span class="badge badge-purple" style="font-size:9px">Collaboration</span></div>
+          </div>
+          <div class="db-actions">
+            <div class="db-count">Free (Student)</div>
+            <button class="btn btn-primary" style="font-size:12px;padding:7px 14px;">Access →</button>
+          </div>
+        </div>
+
+        <div class="db-card">
+          <div class="db-logo" style="background:#43C6AC20;color:#43C6AC;font-size:22px;">🔖</div>
+          <div class="db-info">
+            <div class="db-name">Mendeley <span class="badge badge-cyan" style="font-size:9px;margin-left:6px;">Free</span></div>
+            <div class="db-desc">Reference manager and academic social network. Read and annotate PDFs, discover related research, and collaborate with peers. Syncs your library across all devices seamlessly.</div>
+            <div class="db-tags"><span class="badge badge-cyan" style="font-size:9px">Social Network</span><span class="badge badge-cyan" style="font-size:9px">PDF Reader</span><span class="badge badge-cyan" style="font-size:9px">Discover Papers</span></div>
+          </div>
+          <div class="db-actions">
+            <div class="db-count">Free</div>
+            <button class="btn btn-primary" style="font-size:12px;padding:7px 14px;background:#43C6AC;box-shadow:0 4px 12px #43C6AC40;">Access →</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Style Guides -->
+      <h3 style="font-size:14px;font-weight:700;margin:22px 0 12px;">📐 Citation Style Quick Reference</h3>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 15px;">
+          <div style="font-weight:700;font-size:13px;color:#F7971E;margin-bottom:5px;">APA 7th</div>
+          <div style="font-size:11px;color:var(--text2);line-height:1.6;">Author, A. A. (Year). <em>Title of work.</em> Publisher. DOI</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:7px;">Used in: Psychology, Education, Social Sciences</div>
+        </div>
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 15px;">
+          <div style="font-weight:700;font-size:13px;color:#6C63FF;margin-bottom:5px;">MLA 9th</div>
+          <div style="font-size:11px;color:var(--text2);line-height:1.6;">Author Last, First. <em>Title of Work.</em> Publisher, Year.</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:7px;">Used in: Literature, Humanities, Arts</div>
+        </div>
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 15px;">
+          <div style="font-weight:700;font-size:13px;color:#43C6AC;margin-bottom:5px;">Chicago 17th</div>
+          <div style="font-size:11px;color:var(--text2);line-height:1.6;">Author Last, First. <em>Title.</em> City: Publisher, Year.</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:7px;">Used in: History, Fine Arts, Business</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════════
+     MODAL 5 — REMOTE ACCESS
+════════════════════════════════════════════ -->
+<div class="lib-modal" id="remoteModal">
+  <div class="lib-modal-box" style="max-width:860px;">
+    <div class="lib-modal-header" style="background:linear-gradient(135deg,#4a2e99,#A18CD1)">
+      <div>
+        <div class="lmh-icon">💻</div>
+        <h2 class="lmh-title">Remote Access</h2>
+        <p class="lmh-sub">Full library access from anywhere · VPN, Proxy & App options</p>
+      </div>
+      <button class="modal-close" onclick="closeModal('remoteModal')">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <!-- Status Banner -->
+      <div style="background:#2ECC8918;border:1px solid #2ECC8940;border-radius:12px;padding:14px 18px;margin-bottom:20px;display:flex;align-items:center;gap:12px;">
+        <span style="font-size:22px;">✅</span>
+        <div>
+          <div style="font-weight:700;font-size:13px;color:#2ECC89;">Your Remote Access is Active</div>
+          <div style="font-size:11px;color:var(--text2);margin-top:2px;">Student ID verified · Session valid through May 31, 2026 · All databases accessible</div>
+        </div>
+        <button class="btn btn-ghost" style="margin-left:auto;font-size:11px;padding:5px 12px;color:#2ECC89;border-color:#2ECC8940;">Renew Session</button>
+      </div>
+
+      <!-- Access Methods -->
+      <h3 style="font-size:14px;font-weight:700;margin-bottom:12px;">🔌 Connection Methods</h3>
+      <div class="db-list" style="margin-bottom:22px;">
+        <div class="db-card">
+          <div class="db-logo" style="background:#A18CD120;color:#A18CD1;font-size:22px;">🔐</div>
+          <div class="db-info">
+            <div class="db-name">EZproxy (Browser Redirect) <span class="badge badge-green" style="font-size:9px;margin-left:6px;">Easiest · Recommended</span></div>
+            <div class="db-desc">No software needed. Click any database link from the library website and you'll be automatically prompted to log in with your student credentials. Works on any device and browser. Best for occasional off-campus access.</div>
+            <div class="db-tags"><span class="badge badge-purple" style="font-size:9px">No Install</span><span class="badge badge-purple" style="font-size:9px">All Browsers</span><span class="badge badge-purple" style="font-size:9px">Instant</span></div>
+          </div>
+          <div class="db-actions">
+            <div class="db-count">No Setup</div>
+            <button class="btn btn-primary" style="font-size:12px;padding:7px 14px;background:#A18CD1;box-shadow:0 4px 12px #A18CD140;">Connect →</button>
+          </div>
+        </div>
+
+        <div class="db-card">
+          <div class="db-logo" style="background:#6C63FF20;color:#6C63FF;font-size:22px;">🛡️</div>
+          <div class="db-info">
+            <div class="db-name">Campus VPN (GlobalProtect)</div>
+            <div class="db-desc">Full-tunnel VPN that routes all your traffic through the campus network, giving you access to every library resource as if you were on campus. Recommended for heavy research sessions, database downloads, and streaming video lectures.</div>
+            <div class="db-tags"><span class="badge badge-purple" style="font-size:9px">Windows</span><span class="badge badge-purple" style="font-size:9px">macOS</span><span class="badge badge-purple" style="font-size:9px">iOS</span><span class="badge badge-purple" style="font-size:9px">Android</span></div>
+          </div>
+          <div class="db-actions">
+            <div class="db-count">Free</div>
+            <button class="btn btn-primary" style="font-size:12px;padding:7px 14px;">Download →</button>
+          </div>
+        </div>
+
+        <div class="db-card">
+          <div class="db-logo" style="background:#43C6AC20;color:#43C6AC;font-size:22px;">📱</div>
+          <div class="db-info">
+            <div class="db-name">EduVerse Library App</div>
+            <div class="db-desc">Access your borrowed books, course reserves, and saved articles directly from the mobile app. Download e-books for offline reading. Available on iOS and Android — log in with your student account.</div>
+            <div class="db-tags"><span class="badge badge-cyan" style="font-size:9px">Offline Reading</span><span class="badge badge-cyan" style="font-size:9px">iOS & Android</span><span class="badge badge-cyan" style="font-size:9px">Push Notifications</span></div>
+          </div>
+          <div class="db-actions">
+            <div class="db-count">Free</div>
+            <button class="btn btn-primary" style="font-size:12px;padding:7px 14px;background:#43C6AC;box-shadow:0 4px 12px #43C6AC40;">Get App →</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Supported Resources -->
+      <h3 style="font-size:14px;font-weight:700;margin-bottom:12px;">✅ Fully Accessible Remotely</h3>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:20px;">
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px;display:flex;align-items:center;gap:10px;">
+          <span style="font-size:18px;">🔬</span>
+          <div>
+            <div style="font-size:12px;font-weight:700;">All 40+ Research Databases</div>
+            <div style="font-size:10.5px;color:var(--text3);">IEEE, JSTOR, PubMed, Springer & more</div>
+          </div>
+          <span style="margin-left:auto;color:#2ECC89;font-size:16px;">✓</span>
+        </div>
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px;display:flex;align-items:center;gap:10px;">
+          <span style="font-size:18px;">📚</span>
+          <div>
+            <div style="font-size:12px;font-weight:700;">Digital Library (2.4M Books)</div>
+            <div style="font-size:10.5px;color:var(--text3);">Full e-book access and reader</div>
+          </div>
+          <span style="margin-left:auto;color:#2ECC89;font-size:16px;">✓</span>
+        </div>
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px;display:flex;align-items:center;gap:10px;">
+          <span style="font-size:18px;">📖</span>
+          <div>
+            <div style="font-size:12px;font-weight:700;">Course Reserves</div>
+            <div style="font-size:10.5px;color:var(--text3);">PDFs, videos, and e-readings</div>
+          </div>
+          <span style="margin-left:auto;color:#2ECC89;font-size:16px;">✓</span>
+        </div>
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px;display:flex;align-items:center;gap:10px;">
+          <span style="font-size:18px;">🎥</span>
+          <div>
+            <div style="font-size:12px;font-weight:700;">12,000+ Video Lectures</div>
+            <div style="font-size:10.5px;color:var(--text3);">Stream from anywhere</div>
+          </div>
+          <span style="margin-left:auto;color:#2ECC89;font-size:16px;">✓</span>
+        </div>
+      </div>
+
+      <!-- Troubleshooting -->
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 18px;">
+        <div style="font-weight:700;font-size:13px;margin-bottom:10px;">🛠 Troubleshooting Remote Access</div>
+        <div style="display:flex;flex-direction:column;gap:7px;">
+          <div style="font-size:12px;color:var(--text2);padding:8px 12px;background:var(--bg3);border-radius:8px;"><strong>Access denied?</strong> — Clear cookies, try a private/incognito window, and re-login with your full student email.</div>
+          <div style="font-size:12px;color:var(--text2);padding:8px 12px;background:var(--bg3);border-radius:8px;"><strong>VPN not connecting?</strong> — Ensure GlobalProtect is updated to v6.2+. Use gateway: <code style="font-family:monospace;background:var(--bg2);padding:1px 5px;border-radius:4px;">vpn.eduverse.edu</code></div>
+          <div style="font-size:12px;color:var(--text2);padding:8px 12px;background:var(--bg3);border-radius:8px;"><strong>Database not loading?</strong> — Some databases require EZproxy, not VPN. Try accessing via the library portal link instead.</div>
+        </div>
+        <button class="btn btn-ghost" style="font-size:11px;padding:6px 14px;margin-top:12px;color:#A18CD1;border-color:#A18CD140;" onclick="openModal('librarianModal'); closeModal('remoteModal');">💬 Get Help from a Librarian</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════════
+     MODAL 6 — ASK A LIBRARIAN
+════════════════════════════════════════════ -->
+<div class="lib-modal" id="librarianModal">
+  <div class="lib-modal-box" style="max-width:840px;">
+    <div class="lib-modal-header" style="background:linear-gradient(135deg,#1a7799,#56CCF2)">
+      <div>
+        <div class="lmh-icon">🧑‍🏫</div>
+        <h2 class="lmh-title">Ask a Librarian</h2>
+        <p class="lmh-sub">Expert research help · Live chat, email, phone & in-person appointments</p>
+      </div>
+      <button class="modal-close" onclick="closeModal('librarianModal')">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <!-- Availability Banner -->
+      <div style="background:#2ECC8918;border:1px solid #2ECC8940;border-radius:12px;padding:14px 18px;margin-bottom:20px;display:flex;align-items:center;gap:12px;">
+        <div style="width:10px;height:10px;background:#2ECC89;border-radius:50%;box-shadow:0 0 0 3px #2ECC8930;flex-shrink:0;"></div>
+        <div>
+          <div style="font-weight:700;font-size:13px;color:#2ECC89;">3 Librarians Online Now</div>
+          <div style="font-size:11px;color:var(--text2);margin-top:2px;">Live chat available · Avg. wait time: &lt;2 minutes · Today's hours: 8:00 AM – 10:00 PM</div>
+        </div>
+        <button class="btn btn-primary" style="margin-left:auto;font-size:12px;padding:8px 16px;background:#56CCF2;box-shadow:0 4px 12px #56CCF240;" onclick="startLibrarianChat()">💬 Start Live Chat</button>
+      </div>
+
+      <!-- Contact Channels -->
+      <h3 style="font-size:14px;font-weight:700;margin-bottom:12px;">📡 Contact Channels</h3>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:22px;">
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 18px;">
+          <div style="font-size:22px;margin-bottom:8px;">💬</div>
+          <div style="font-weight:700;font-size:13px;margin-bottom:4px;">Live Chat</div>
+          <div style="font-size:11px;color:var(--text2);line-height:1.6;margin-bottom:10px;">Instant messaging with a librarian. Best for quick questions about finding sources, database access, and citation help.</div>
+          <div style="font-size:10px;color:var(--text3);margin-bottom:10px;">⏰ Mon–Fri 8AM–10PM · Sat–Sun 10AM–6PM</div>
+          <button class="btn btn-primary" style="font-size:11px;padding:6px 14px;background:#56CCF2;box-shadow:0 4px 12px #56CCF240;width:100%;" onclick="startLibrarianChat()">Start Chat →</button>
+        </div>
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 18px;">
+          <div style="font-size:22px;margin-bottom:8px;">📧</div>
+          <div style="font-weight:700;font-size:13px;margin-bottom:4px;">Email Support</div>
+          <div style="font-size:11px;color:var(--text2);line-height:1.6;margin-bottom:10px;">Detailed research consultations by email. Attach your assignment brief for tailored guidance on finding the right sources.</div>
+          <div style="font-size:10px;color:var(--text3);margin-bottom:10px;">📬 library@eduverse.edu · Response within 4 hrs</div>
+          <button class="btn btn-ghost" style="font-size:11px;padding:6px 14px;color:#56CCF2;border-color:#56CCF240;width:100%;">Send Email →</button>
+        </div>
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 18px;">
+          <div style="font-size:22px;margin-bottom:8px;">📅</div>
+          <div style="font-weight:700;font-size:13px;margin-bottom:4px;">Book an Appointment</div>
+          <div style="font-size:11px;color:var(--text2);line-height:1.6;margin-bottom:10px;">30 or 60-minute one-on-one research consultation. Ideal for thesis projects, literature reviews, and complex research needs.</div>
+          <div style="font-size:10px;color:var(--text3);margin-bottom:10px;">📍 Library Room 204 or Zoom · Next slot: Today 3PM</div>
+          <button class="btn btn-ghost" style="font-size:11px;padding:6px 14px;color:#56CCF2;border-color:#56CCF240;width:100%;">Book Slot →</button>
+        </div>
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 18px;">
+          <div style="font-size:22px;margin-bottom:8px;">📞</div>
+          <div style="font-weight:700;font-size:13px;margin-bottom:4px;">Phone Support</div>
+          <div style="font-size:11px;color:var(--text2);line-height:1.6;margin-bottom:10px;">Speak directly with a librarian for immediate help. Great for urgent access issues or when you're about to submit an assignment.</div>
+          <div style="font-size:10px;color:var(--text3);margin-bottom:10px;">☎️ (555) 024-7800 ext. 3 · Mon–Fri 9AM–6PM</div>
+          <button class="btn btn-ghost" style="font-size:11px;padding:6px 14px;color:#56CCF2;border-color:#56CCF240;width:100%;">Call Now →</button>
+        </div>
+      </div>
+
+      <!-- Subject Specialists -->
+      <h3 style="font-size:14px;font-weight:700;margin-bottom:12px;">🎓 Subject Specialist Librarians</h3>
+      <div class="db-list">
+        <div class="db-card">
+          <div class="db-logo" style="background:#6C63FF20;color:#6C63FF;font-size:24px;">👩‍💻</div>
+          <div class="db-info">
+            <div class="db-name">Dr. Aisha Patel <span class="badge badge-purple" style="font-size:9px;margin-left:6px;">CS & Engineering</span></div>
+            <div class="db-desc">Expert in IEEE databases, ACM Digital Library, arXiv, and computing literature. Specializes in systematic literature reviews for CS research and thesis projects.</div>
+            <div class="db-tags"><span class="badge badge-purple" style="font-size:9px">Computer Science</span><span class="badge badge-purple" style="font-size:9px">Engineering</span><span class="badge badge-purple" style="font-size:9px">AI & ML</span></div>
+          </div>
+          <div class="db-actions">
+            <div class="db-count" style="color:#2ECC89;">● Online</div>
+            <button class="btn btn-primary" style="font-size:12px;padding:7px 14px;background:#6C63FF;box-shadow:0 4px 12px #6C63FF40;" onclick="startLibrarianChat()">Chat →</button>
+          </div>
+        </div>
+        <div class="db-card">
+          <div class="db-logo" style="background:#FF658420;color:#FF6584;font-size:24px;">👨‍⚕️</div>
+          <div class="db-info">
+            <div class="db-name">Prof. Marcus Reid <span class="badge badge-pink" style="font-size:9px;margin-left:6px;">Medical & Sciences</span></div>
+            <div class="db-desc">Specialist in PubMed, MEDLINE, Cochrane Library, and clinical evidence. Experienced with systematic reviews, meta-analyses, and health sciences literature searches.</div>
+            <div class="db-tags"><span class="badge badge-pink" style="font-size:9px">Medicine</span><span class="badge badge-pink" style="font-size:9px">Biology</span><span class="badge badge-pink" style="font-size:9px">Public Health</span></div>
+          </div>
+          <div class="db-actions">
+            <div class="db-count" style="color:#F7971E;">● Away</div>
+            <button class="btn btn-ghost" style="font-size:12px;padding:7px 14px;color:#56CCF2;border-color:#56CCF240;">Email →</button>
+          </div>
+        </div>
+        <div class="db-card">
+          <div class="db-logo" style="background:#43C6AC20;color:#43C6AC;font-size:24px;">👩‍🎨</div>
+          <div class="db-info">
+            <div class="db-name">Ms. Elena Vasquez <span class="badge badge-cyan" style="font-size:9px;margin-left:6px;">Humanities & Arts</span></div>
+            <div class="db-desc">Expert in JSTOR, MLA International Bibliography, Oxford Reference Online, and arts databases. Available for help with literature searches, primary source research, and citation management.</div>
+            <div class="db-tags"><span class="badge badge-cyan" style="font-size:9px">Literature</span><span class="badge badge-cyan" style="font-size:9px">History</span><span class="badge badge-cyan" style="font-size:9px">Fine Arts</span></div>
+          </div>
+          <div class="db-actions">
+            <div class="db-count" style="color:#2ECC89;">● Online</div>
+            <button class="btn btn-primary" style="font-size:12px;padding:7px 14px;background:#43C6AC;box-shadow:0 4px 12px #43C6AC40;" onclick="startLibrarianChat()">Chat →</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Chat Form -->
+      <div id="librarianChatSection" style="display:none;margin-top:20px;">
+        <div style="background:var(--card);border:1px solid var(--border2);border-radius:14px;padding:18px 20px;">
+          <div style="font-weight:700;font-size:13px;margin-bottom:12px;">💬 Start a Research Chat</div>
+          <div class="modal-search-row" style="margin-bottom:10px;">
+            <span>🔍</span>
+            <input type="text" id="librarianQuestion" placeholder="Describe your research question or what you need help with…">
+          </div>
+          <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+            <button class="db-tab" onclick="setLibTopic(this,'Finding Sources')">Finding Sources</button>
+            <button class="db-tab" onclick="setLibTopic(this,'Citation Help')">Citation Help</button>
+            <button class="db-tab" onclick="setLibTopic(this,'Database Access')">Database Access</button>
+            <button class="db-tab" onclick="setLibTopic(this,'Thesis Research')">Thesis Research</button>
+          </div>
+          <button class="btn btn-primary" style="font-size:13px;background:#56CCF2;box-shadow:0 4px 12px #56CCF240;" onclick="submitLibrarianQuestion()">Send Question →</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════════
+     BOOK READER MODAL
+════════════════════════════════════════════ -->
+<div class="lib-modal" id="bookReaderModal">
+  <div class="lib-modal-box reader-box">
+    <div class="reader-toolbar">
+      <div class="reader-book-info">
+        <strong id="readerTitle">Book Title</strong>
+        <small id="readerAuthor">Author</small>
+      </div>
+      <div class="reader-controls">
+        <button class="reader-btn" id="fontDecBtn">A−</button>
+        <button class="reader-btn" id="fontIncBtn">A+</button>
+        <button class="reader-btn" id="themeBtn">🌙 Dark</button>
+        <button class="reader-btn" onclick="closeModal('bookReaderModal')">✕ Close</button>
+      </div>
+    </div>
+    <div class="reader-layout">
+      <div class="reader-toc">
+        <div class="toc-label">Contents</div>
+        <div id="tocList"></div>
+      </div>
+      <div class="reader-page" id="readerPage">
+        <div class="reader-chapter-title" id="readerChapterTitle"></div>
+        <div class="reader-body" id="readerBody"></div>
+        <div class="reader-nav">
+          <button class="btn btn-ghost" id="prevBtn">← Previous</button>
+          <span class="reader-page-info" id="pageInfo"></span>
+          <button class="btn btn-primary" id="nextBtn">Next →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Backdrop -->
+<div class="lib-backdrop" id="libBackdrop" onclick="closeAllModals()"></div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+/* ══════════════════════════════════
+   LIBRARY JAVASCRIPT
+══════════════════════════════════ */
+
+// ── Modal helpers ──────────────────────────
+function openModal(id) {
+  document.getElementById(id).classList.add('show');
+  document.getElementById('libBackdrop').classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+function closeModal(id) {
+  document.getElementById(id).classList.remove('show');
+  if (!document.querySelector('.lib-modal.show')) {
+    document.getElementById('libBackdrop').classList.remove('show');
+    document.body.style.overflow = '';
+  }
+}
+function closeAllModals() {
+  document.querySelectorAll('.lib-modal').forEach(m => m.classList.remove('show'));
+  document.getElementById('libBackdrop').classList.remove('show');
+  document.body.style.overflow = '';
+}
+
+// ── Book filter ────────────────────────────
+function filterBooks() {
+  const q = document.getElementById('bookSearchInput').value.toLowerCase();
+  const g = document.getElementById('bookGenreFilter').value;
+  document.querySelectorAll('.book-card').forEach(card => {
+    const titleMatch = q === '' || card.dataset.title.includes(q);
+    const genreMatch = !g || card.dataset.genre === g;
+    card.style.display = (titleMatch && genreMatch) ? '' : 'none';
+  });
+}
+
+// ── DB category filter ─────────────────────
+function switchDB(btn, cat) {
+  document.querySelectorAll('.db-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.db-card').forEach(card => {
+    const show = cat === 'all' || card.dataset.cat.includes(cat);
+    card.style.display = show ? '' : 'none';
+  });
+}
+
+// ── Toast helper ───────────────────────────
+function showToast(icon, msg) {
+  const toast = document.createElement('div');
+  toast.style.cssText = `position:fixed;bottom:32px;left:50%;transform:translateX(-50%);
+    background:var(--card2);border:1px solid var(--border2);border-radius:12px;
+    padding:14px 22px;z-index:9999;font-size:14px;font-weight:600;
+    box-shadow:0 8px 30px rgba(0,0,0,0.5);display:flex;align-items:center;gap:10px;`;
+  toast.innerHTML = `<span style="font-size:20px">${icon}</span> ${msg}`;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 3000);
+}
+
+// ── Research DB opener ─────────────────────
+function openResearchDB(name, icon) {
+  closeModal('researchModal');
+  showToast(icon, `Opening <strong>${name}</strong>… Redirecting to database portal.`);
+}
+
+// ── Citation Generator ─────────────────────
+const CITATION_EXAMPLES = {
+  'APA 7th Edition': {
+    'Journal Article': 'Vaswani, A., Shazeer, N., & Parmar, N. (2017). Attention is all you need. <em>Advances in Neural Information Processing Systems, 30</em>, 5998–6008. https://doi.org/10.48550/arXiv.1706.03762',
+    'Book': 'Martin, R. C. (2008). <em>Clean code: A handbook of agile software craftsmanship.</em> Prentice Hall.',
+    'Website': 'Anthropic. (2024). <em>Claude AI assistant.</em> https://claude.ai',
+    'Conference Paper': 'He, K., Zhang, X., Ren, S., & Sun, J. (2016). Deep residual learning for image recognition. <em>Proceedings of the IEEE CVPR</em>, 770–778.',
+    'Thesis / Dissertation': 'Smith, J. A. (2023). <em>Machine learning applications in clinical diagnostics</em> [Doctoral dissertation, Stanford University]. ProQuest Dissertations.',
+  },
+  'MLA 9th Edition': {
+    'Journal Article': 'Vaswani, Ashish, et al. "Attention Is All You Need." <em>Advances in Neural Information Processing Systems</em>, vol. 30, 2017, pp. 5998–6008.',
+    'Book': 'Martin, Robert C. <em>Clean Code: A Handbook of Agile Software Craftsmanship.</em> Prentice Hall, 2008.',
+    'Website': 'Anthropic. "Claude AI Assistant." <em>Anthropic</em>, 2024, claude.ai.',
+    'Conference Paper': 'He, Kaiming, et al. "Deep Residual Learning for Image Recognition." <em>IEEE CVPR</em>, 2016, pp. 770–778.',
+    'Thesis / Dissertation': 'Smith, Jane A. "Machine Learning Applications in Clinical Diagnostics." PhD diss., Stanford University, 2023.',
+  },
+  'Chicago 17th Edition': {
+    'Journal Article': 'Vaswani, Ashish, Noam Shazeer, and Niki Parmar. "Attention Is All You Need." <em>Advances in Neural Information Processing Systems</em> 30 (2017): 5998–6008.',
+    'Book': 'Martin, Robert C. <em>Clean Code: A Handbook of Agile Software Craftsmanship.</em> Upper Saddle River: Prentice Hall, 2008.',
+    'Website': 'Anthropic. "Claude AI Assistant." Accessed May 28, 2026. https://claude.ai.',
+    'Conference Paper': 'He, Kaiming, Xiangyu Zhang, Shaoqing Ren, and Jian Sun. "Deep Residual Learning for Image Recognition." <em>IEEE CVPR</em>, Las Vegas, 2016.',
+    'Thesis / Dissertation': 'Smith, Jane A. "Machine Learning Applications in Clinical Diagnostics." PhD diss., Stanford University, 2023.',
+  },
+  'Harvard': {
+    'Journal Article': 'Vaswani, A., Shazeer, N. and Parmar, N. (2017) \'Attention is all you need\', <em>Advances in Neural Information Processing Systems</em>, 30, pp. 5998–6008.',
+    'Book': 'Martin, R.C. (2008) <em>Clean code: A handbook of agile software craftsmanship.</em> Upper Saddle River: Prentice Hall.',
+    'Website': 'Anthropic (2024) <em>Claude AI assistant.</em> Available at: https://claude.ai (Accessed: 28 May 2026).',
+    'Conference Paper': 'He, K. et al. (2016) \'Deep residual learning for image recognition\', <em>IEEE CVPR</em>, pp. 770–778.',
+    'Thesis / Dissertation': 'Smith, J.A. (2023) \'Machine learning applications in clinical diagnostics\'. PhD thesis. Stanford University.',
+  },
+  'IEEE': {
+    'Journal Article': 'A. Vaswani et al., "Attention is all you need," <em>Adv. Neural Inf. Process. Syst.</em>, vol. 30, pp. 5998–6008, 2017.',
+    'Book': 'R. C. Martin, <em>Clean Code: A Handbook of Agile Software Craftsmanship.</em> Upper Saddle River, NJ: Prentice Hall, 2008.',
+    'Website': 'Anthropic, "Claude AI assistant," 2024. [Online]. Available: https://claude.ai. [Accessed: May 28, 2026].',
+    'Conference Paper': 'K. He, X. Zhang, S. Ren, and J. Sun, "Deep residual learning for image recognition," in <em>Proc. IEEE CVPR</em>, 2016, pp. 770–778.',
+    'Thesis / Dissertation': 'J. A. Smith, "Machine learning applications in clinical diagnostics," Ph.D. dissertation, Stanford University, 2023.',
+  },
+  'Vancouver': {
+    'Journal Article': 'Vaswani A, Shazeer N, Parmar N, et al. Attention is all you need. <em>Adv Neural Inf Process Syst.</em> 2017;30:5998-6008.',
+    'Book': 'Martin RC. <em>Clean code: a handbook of agile software craftsmanship.</em> Upper Saddle River: Prentice Hall; 2008.',
+    'Website': 'Anthropic. Claude AI assistant [Internet]. 2024 [cited 2026 May 28]. Available from: https://claude.ai',
+    'Conference Paper': 'He K, Zhang X, Ren S, Sun J. Deep residual learning for image recognition. In: <em>IEEE CVPR</em>; 2016. p. 770-8.',
+    'Thesis / Dissertation': 'Smith JA. Machine learning applications in clinical diagnostics [dissertation]. Stanford: Stanford University; 2023.',
+  }
+};
+
+function generateCitation() {
+  const style = document.getElementById('citStyle').value;
+  const type = document.getElementById('citType').value;
+  const examples = CITATION_EXAMPLES[style] || CITATION_EXAMPLES['APA 7th Edition'];
+  const citation = examples[type] || examples['Journal Article'];
+  document.getElementById('citStyleLabel').textContent = style + ' — ' + type;
+  document.getElementById('citOutput').innerHTML = citation;
+  document.getElementById('citResult').style.display = 'block';
+}
+
+function copyCitation() {
+  const text = document.getElementById('citOutput').innerText;
+  navigator.clipboard.writeText(text).then(() => {
+    showToast('📋', 'Citation copied to clipboard!');
+  });
+}
+
+function addToLibrary() {
+  showToast('➕', 'Citation added to your Zotero library!');
+}
+
+// ── Librarian Chat ─────────────────────────
+function startLibrarianChat() {
+  document.getElementById('librarianChatSection').style.display = 'block';
+  document.getElementById('librarianChatSection').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+function setLibTopic(btn, topic) {
+  document.querySelectorAll('#librarianChatSection .db-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  const inp = document.getElementById('librarianQuestion');
+  if (!inp.value) inp.value = topic + ': ';
+  inp.focus();
+}
+
+function submitLibrarianQuestion() {
+  const q = document.getElementById('librarianQuestion').value.trim();
+  if (!q) return;
+  showToast('💬', 'Connecting you to a librarian…');
+  setTimeout(() => showToast('🧑‍🏫', 'Librarian connected! Check your chat window.'), 2000);
+}
+
+
+const BOOKS = [
+  // 0: Clean Code
+  {
+    title: 'Clean Code', author: 'Robert C. Martin',
+    chapters: [
+      { title: 'Chapter 1 — What Is Clean Code?',
+        body: `<p>What makes code clean? This question has been asked by every programmer who has looked at their own code after a year and tried to understand it.</p>
+<p><em>Bjarne Stroustrup</em>, inventor of C++, puts it simply: <em>"I like my code to be elegant and efficient. The logic should be straightforward to make it hard for bugs to hide, the dependencies minimal to ease maintenance..."</em></p>
+<h3>The Total Cost of Owning a Mess</h3>
+<p>If you have been a programmer for more than two or three years, you have probably been significantly slowed down by someone else's messy code. The degree of slowdown can be significant. Over the span of a year or two, teams that were moving very fast at the beginning of a project can find themselves moving at a snail's pace.</p>
+<p>Every change they make to the code breaks two or three other parts of the code. No change is trivial. Every addition or modification to the system requires that the tangles, twists, and knots be "understood" so that more tangles, twists, and knots can be added. Over time the mess becomes so big and so deep and so tall, they cannot clean it up.</p>
+<h3>The Grand Redesign in the Sky</h3>
+<p>Eventually the team rebels. They inform management that they cannot continue to develop in this odious code base. They demand a redesign. Management does not want to expend the resources on a whole new redesign of the project, but they cannot deny that productivity is terrible. Eventually they bend to the demands of the developers and authorize the grand redesign in the sky.</p>` },
+      { title: 'Chapter 2 — Meaningful Names',
+        body: `<p>Names are everywhere in software. We name our variables, our functions, our arguments, classes, and packages. We name our source files and the directories that contain them. We name our <code>jar</code> files and <code>war</code> files and <code>ear</code> files. We name and name and name.</p>
+<h3>Use Intention-Revealing Names</h3>
+<p>The name of a variable, function, or class should answer all the big questions. It should tell you why it exists, what it does, and how it is used. If a name requires a comment, then the name does not reveal its intent.</p>
+<p><code>int d; // elapsed time in days</code></p>
+<p>The name <code>d</code> reveals nothing. It does not evoke a sense of elapsed time, nor of days. We should choose a name that specifies what is being measured and the unit of that measurement:</p>
+<p><code>int elapsedTimeInDays;<br>int daysSinceCreation;<br>int daysSinceModification;<br>int fileAgeInDays;</code></p>
+<h3>Avoid Disinformation</h3>
+<p>Programmers must avoid leaving false clues that obscure the meaning of code. We should avoid words whose entrenched meanings vary from our intended meaning.</p>` },
+      { title: 'Chapter 3 — Functions',
+        body: `<p>In the early days of programming we composed our systems of routines and subroutines. Then, in the era of Fortran and PL/1 we composed our systems of programs, subprograms, and functions. Today only the function survives from those early days.</p>
+<h3>Small!</h3>
+<p>The first rule of functions is that they should be small. The second rule of functions is that <em>they should be smaller than that</em>.</p>
+<p>How short should a function be? In 1999 Kent Beck visited Ward Cunningham and saw functions that were two, three, or four lines long. Each was transparently obvious. Each told a story. And each led you to the next in a compelling order.</p>
+<h3>Do One Thing</h3>
+<p>Functions should do one thing. They should do it well. They should do it only. The problem with this statement is that it is hard to know what "one thing" is.</p>
+<p>If a function does only those steps that are one level below the stated name of the function, then the function is doing one thing. The reason we write functions is to decompose a larger concept into a set of steps at the next level of abstraction.</p>` },
+    ]
+  },
+  // 1: Algorithms
+  {
+    title: 'Introduction to Algorithms', author: 'Cormen, Leiserson, Rivest, Stein',
+    chapters: [
+      { title: 'Chapter 1 — The Role of Algorithms',
+        body: `<p>An <strong>algorithm</strong> is any well-defined computational procedure that takes some value, or set of values, as <em>input</em> and produces some value, or set of values, as <em>output</em>. An algorithm is thus a sequence of computational steps that transform the input into the output.</p>
+<h3>Sorting Problem</h3>
+<p><strong>Input:</strong> A sequence of <em>n</em> numbers ⟨a₁, a₂, …, aₙ⟩.<br>
+<strong>Output:</strong> A permutation (reordering) ⟨a₁′, a₂′, …, aₙ′⟩ of the input sequence such that a₁′ ≤ a₂′ ≤ · · · ≤ aₙ′.</p>
+<h3>What Kinds of Problems Are Solved by Algorithms?</h3>
+<p>Practical applications of algorithms are ubiquitous and include the following: The Human Genome Project has made great progress toward the goals of identifying all the 100,000 genes in human DNA, determining the sequences of the 3 billion chemical base pairs that make up human DNA, storing this information in databases, and developing tools for data analysis.</p>` },
+      { title: 'Chapter 2 — Asymptotic Notation',
+        body: `<p>When we look at input sizes large enough to make only the order of growth of the running time relevant, we are studying the <strong>asymptotic efficiency</strong> of algorithms. That is, we are concerned with how the running time of an algorithm increases with the size of the input <em>in the limit</em>, as the size of the input increases without bound.</p>
+<h3>Θ-Notation (Theta)</h3>
+<p>For a given function g(n), we denote by Θ(g(n)) the <em>set of functions</em>:<br>
+<code>Θ(g(n)) = {f(n) : ∃c₁,c₂,n₀>0 s.t. 0 ≤ c₁g(n) ≤ f(n) ≤ c₂g(n) ∀n ≥ n₀}</code></p>
+<h3>O-Notation (Big-Oh)</h3>
+<p>The Θ-notation asymptotically bounds a function from above and below. When we have only an <strong>asymptotic upper bound</strong>, we use O-notation.<br>Common orders of growth:<br>
+<code>O(1) → O(log n) → O(n) → O(n log n) → O(n²) → O(2ⁿ) → O(n!)</code></p>` },
+      { title: 'Chapter 3 — Divide and Conquer',
+        body: `<p>In <strong>divide-and-conquer</strong>, we solve a problem recursively, applying three steps at each level of the recursion:</p>
+<p><strong>Divide</strong> the problem into a number of subproblems that are smaller instances of the same problem.<br>
+<strong>Conquer</strong> the subproblems by solving them recursively.<br>
+<strong>Combine</strong> the solutions to the subproblems into the solution for the original problem.</p>
+<h3>Merge Sort</h3>
+<p>The merge sort algorithm closely follows the divide-and-conquer paradigm. Intuitively, it operates as follows. To sort <em>n</em> elements:</p>
+<p><strong>Divide:</strong> Divide the n-element sequence into two subsequences of n/2 elements each.<br>
+<strong>Conquer:</strong> Sort the two subsequences recursively using merge sort.<br>
+<strong>Combine:</strong> Merge the two sorted subsequences to produce the sorted answer.</p>
+<p>The recursion "bottoms out" when the sequence to be sorted has length 1, in which case there is no work to do, since every sequence of length 1 is already sorted.</p>` },
+    ]
+  },
+  // 2: Calculus
+  {
+    title: 'Calculus: Early Transcendentals', author: 'James Stewart',
+    chapters: [
+      { title: 'Chapter 7 — Techniques of Integration',
+        body: `<p>Because of the Fundamental Theorem of Calculus, we can integrate a function if we know an antiderivative. We summarize the most important integrals we have learned so far, and then develop new techniques for integrating more complex functions.</p>
+<h3>Integration by Parts</h3>
+<p>Every differentiation rule has a corresponding integration rule. The rule that corresponds to the Product Rule for differentiation is called the rule for <strong>integration by parts</strong>.</p>
+<p><code>∫ u dv = uv − ∫ v du</code></p>
+<p>Our aim is to choose <em>u</em> and <em>dv</em> so that the new integral <code>∫ v du</code> is simpler than <code>∫ u dv</code>. Use the mnemonic <strong>LIATE</strong>: Logarithmic, Inverse trig, Algebraic, Trigonometric, Exponential — choose <em>u</em> as the first applicable type.</p>
+<h3>Trigonometric Integrals</h3>
+<p>In this section we use trigonometric identities to integrate certain combinations of trigonometric functions. For example:<br>
+<code>∫ sinⁿx cosᵐx dx</code><br>
+We use the identity <code>sin²x + cos²x = 1</code> strategically.</p>` },
+      { title: 'Chapter 8 — Infinite Sequences and Series',
+        body: `<p>What does it mean to write a number as an infinite decimal? For instance, what does it mean to write <em>π = 3.14159 26535 89793…</em>?</p>
+<h3>Convergence of a Series</h3>
+<p>Given a series Σaₙ = a₁ + a₂ + a₃ + ···, let <em>sₙ</em> denote its <em>n</em>th partial sum:<br>
+<code>sₙ = Σᵢ₌₁ⁿ aᵢ = a₁ + a₂ + ··· + aₙ</code></p>
+<p>If the sequence {sₙ} is convergent and <em>lim(n→∞) sₙ = s</em> exists as a real number, then the series is called <strong>convergent</strong>.</p>
+<h3>The Integral Test</h3>
+<p>Suppose <em>f</em> is a continuous, positive, decreasing function on [1, ∞) and let aₙ = f(n). Then the series Σaₙ is convergent if and only if the improper integral <code>∫₁^∞ f(x) dx</code> is convergent.</p>` },
+    ]
+  },
+  // 3: University Physics
+  {
+    title: 'University Physics', author: 'Young & Freedman',
+    chapters: [
+      { title: 'Chapter 4 — Newton\'s Laws of Motion',
+        body: `<p>Newton's three laws of motion, the foundation of classical mechanics, tell us the connection between force and motion. They allow us to predict how a body will move in response to forces that act on it.</p>
+<h3>Newton's First Law</h3>
+<p>A body acted on by no net force moves with constant velocity (which may be zero) and zero acceleration. This is the <strong>law of inertia</strong> — every object resists any change in its state of motion.</p>
+<h3>Newton's Second Law</h3>
+<p>The net force on a body is equal to the product of the body's mass and its acceleration:<br>
+<code>ΣF⃗ = ma⃗</code><br>
+The SI unit of force is the <strong>newton</strong>: <code>1 N = 1 kg·m/s²</code></p>
+<h3>Newton's Third Law</h3>
+<p>If body A exerts a force on body B (an "action"), then body B exerts a force on body A (a "reaction"). These two forces have the same magnitude but opposite directions:<br>
+<code>F⃗_{A on B} = −F⃗_{B on A}</code></p>` },
+      { title: 'Chapter 5 — Work and Energy',
+        body: `<p>The concept of energy is one of the most important ideas in all of science. In this chapter we introduce the concepts of work and kinetic energy, the work-energy theorem.</p>
+<h3>Work Done by a Constant Force</h3>
+<p>When a constant force <strong>F⃗</strong> acts on a particle that undergoes a displacement <strong>s⃗</strong>, the work <em>W</em> done by the force is:<br>
+<code>W = F⃗ · s⃗ = Fs cos φ</code><br>
+where φ is the angle between <strong>F⃗</strong> and <strong>s⃗</strong>. Work is a <em>scalar</em> — measured in joules (J), where <code>1 J = 1 N·m</code>.</p>
+<h3>Kinetic Energy and the Work-Energy Theorem</h3>
+<p>The kinetic energy of a particle with mass <em>m</em> moving at speed <em>v</em> is:<br>
+<code>K = ½mv²</code><br>
+The <strong>work-energy theorem</strong> states that the net work done on a particle equals the change in kinetic energy:<br>
+<code>W_net = ΔK = K_final − K_initial</code></p>` },
+    ]
+  },
+  // 4: Design Patterns
+  {
+    title: 'Design Patterns', author: 'Gang of Four',
+    chapters: [
+      { title: 'Introduction — What Are Design Patterns?',
+        body: `<p>Each pattern describes a problem which occurs over and over again in our environment, and then describes the core of the solution to that problem, in such a way that you can use this solution a million times over, without ever doing it the same way twice.</p>
+<h3>Elements of a Pattern</h3>
+<p>In general, a pattern has four essential elements:</p>
+<p>1. The <strong>pattern name</strong> — a word or two to describe a design problem, its solutions, and consequences.<br>
+2. The <strong>problem</strong> — describes when to apply the pattern, explaining the problem and its context.<br>
+3. The <strong>solution</strong> — describes the elements that make up the design, their relationships, responsibilities, and collaborations.<br>
+4. The <strong>consequences</strong> — the results and trade-offs of applying the pattern.</p>` },
+      { title: 'Chapter 1 — Creational Patterns',
+        body: `<p>Creational design patterns abstract the instantiation process. They help make a system independent of how its objects are created, composed, and represented.</p>
+<h3>Singleton Pattern</h3>
+<p><strong>Intent:</strong> Ensure a class has only one instance, and provide a global point of access to it.</p>
+<p><strong>Motivation:</strong> For some classes, it is important to have exactly one instance. A printer spooler, a file system, a window manager — all must be unique.</p>
+<code>class Singleton {<br>  private static instance: Singleton;<br>  private constructor() {}<br>  static getInstance(): Singleton {<br>    if (!Singleton.instance) {<br>      Singleton.instance = new Singleton();<br>    }<br>    return Singleton.instance;<br>  }<br>}</code>
+<h3>Factory Method Pattern</h3>
+<p><strong>Intent:</strong> Define an interface for creating an object, but let subclasses decide which class to instantiate. Factory Method lets a class defer instantiation to subclasses.</p>` },
+    ]
+  },
+  // 5: Sapiens
+  {
+    title: 'Sapiens: A Brief History of Humankind', author: 'Yuval Noah Harari',
+    chapters: [
+      { title: 'Part One — The Cognitive Revolution',
+        body: `<p>About 13.5 billion years ago, matter, energy, time and space came into being in what is known as the Big Bang. The story of these fundamental features of our universe is called physics.</p>
+<p>About 3.8 billion years ago, certain molecules combined to form particularly large and intricate structures called organisms. The story of organisms is called biology.</p>
+<h3>An Animal of No Significance</h3>
+<p>About 70,000 years ago, organisms belonging to the species <em>Homo sapiens</em> started to form even more elaborate structures called <strong>cultures</strong>. The subsequent development of these human cultures is called history.</p>
+<p>Three important revolutions shaped the course of history: the <strong>Cognitive Revolution</strong> kicked things off about 70,000 years ago. The <strong>Agricultural Revolution</strong> sped things up about 12,000 years ago. The <strong>Scientific Revolution</strong>, which got underway only 500 years ago, may well end history and start something completely different.</p>` },
+      { title: 'Part Two — The Agricultural Revolution',
+        body: `<p>For 2.5 million years humans fed themselves by gathering plants and hunting animals that lived and bred without their intervention. Then, beginning around 9500–8500 BC, humans began to devote almost all their time and effort to manipulating the lives of a few animal and plant species.</p>
+<h3>History's Biggest Fraud?</h3>
+<p>The Agricultural Revolution is history's biggest fraud. Who was responsible? Neither kings, nor priests, nor merchants. The culprits were a handful of plant species, including wheat, rice and potatoes. These plants domesticated <em>Homo sapiens</em>, rather than vice versa.</p>
+<p>The average farmer worked harder than the average forager, and got a worse diet in return. The Agricultural Revolution left farmers with lives generally more difficult and less satisfying than those of foragers. Hunter-gatherers spent their time in more stimulating and varied ways.</p>` },
+    ]
+  },
+  // 6: Good to Great
+  {
+    title: 'Good to Great', author: 'Jim Collins',
+    chapters: [
+      { title: 'Chapter 1 — Good Is the Enemy of Great',
+        body: `<p>Good is the enemy of great. And that is one of the key reasons why we have so little that becomes great. We don't have great schools, principally because we have good schools. We don't have great government, principally because we have good government.</p>
+<h3>The Research</h3>
+<p>We began with 1,435 companies that appeared on the Fortune 500 from 1965 to 1995. We looked for companies that made the leap from good to great results and sustained those results for at least fifteen years. We then compared these companies to a carefully selected set of comparison companies that failed to make the leap.</p>
+<p>After years of research, we identified just <strong>11 companies</strong> that met all our criteria. Their average cumulative stock returns were 6.9 times the general market over fifteen years.</p>` },
+      { title: 'Chapter 2 — Level 5 Leadership',
+        body: `<p>We were surprised, shocked really, to discover the type of leadership required for turning a good company into a great one. Compared to high-profile leaders with big personalities who make headlines and become celebrities, the good-to-great leaders seem to have come from Mars.</p>
+<h3>The Two Sides of Level 5</h3>
+<p>Level 5 leaders channel their ego needs away from themselves and into the larger goal of building a great company. It's not that Level 5 leaders have no ego or self-interest. Indeed, they are incredibly ambitious — but their ambition is first and foremost for the <em>institution</em>, not themselves.</p>
+<p>Level 5 leaders display a compelling modesty, are self-effacing and understated. In contrast, two-thirds of the comparison companies had leaders with gargantuan personal egos that contributed to the demise or continued mediocrity of the company.</p>` },
+    ]
+  },
+  // 7: Gatsby
+  {
+    title: 'The Great Gatsby', author: 'F. Scott Fitzgerald',
+    chapters: [
+      { title: 'Chapter I',
+        body: `<p>In my younger and more vulnerable years my father gave me some advice that I've been turning over in my mind ever since.</p>
+<p>"Whenever you feel like criticizing anyone," he told me, "just remember that all the people in this world haven't had the advantages that you've had."</p>
+<p>He didn't say any more, but we've always been unusually communicative in a reserved way, and I understood that he meant a great deal more than that. In consequence, I'm inclined to reserve all judgments, a habit that has opened up many curious natures to me and also made me the victim of not a few veteran bores.</p>
+<p>And, after boasting this way of my tolerance, I come to the admission that it has a limit. Conduct may be founded on the hard rock or the wet marshes, but after a certain point I don't care what it's founded on. When I came back from the East last autumn I felt that I wanted the world to be in uniform and at a sort of moral attention forever.</p>` },
+      { title: 'Chapter II',
+        body: `<p>About half way between West Egg and New York the motor road hastily joins the railroad and runs beside it for a quarter of a mile, so as to shrink away from a certain desolate area of land. This is a <strong>valley of ashes</strong> — a fantastic farm where ashes grow like wheat into ridges and hills and grotesque gardens; where ashes take the forms of houses and chimneys and rising smoke.</p>
+<p>Above the grey land and the spasms of bleak dust which drift endlessly over it, you perceive, after a moment, the eyes of Doctor T. J. Eckleburg. The eyes of Doctor T. J. Eckleburg are blue and gigantic — their retinas are one yard high. They look out of no face, but, instead, from a pair of enormous yellow spectacles which pass over a non-existent nose.</p>` },
+    ]
+  },
+];
+
+// Reader state
+let currentBook = null;
+let currentChapter = 0;
+let readerFontSize = 15.5;
+let readerTheme = 'dark';
+
+function openBookReader(title, author, bookIdx) {
+  // Close any open library modal first
+  document.querySelectorAll('.lib-modal.show').forEach(m => {
+    if (m.id !== 'bookReaderModal') m.classList.remove('show');
+  });
+
+  currentBook = BOOKS[bookIdx] || BOOKS[0];
+  currentChapter = 0;
+
+  document.getElementById('readerTitle').textContent = currentBook.title;
+  document.getElementById('readerAuthor').textContent = currentBook.author;
+
+  // Build TOC
+  const tocList = document.getElementById('tocList');
+  tocList.innerHTML = '';
+  currentBook.chapters.forEach((ch, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'toc-item' + (i === 0 ? ' active' : '');
+    btn.textContent = ch.title;
+    btn.onclick = () => goToChapter(i);
+    tocList.appendChild(btn);
+  });
+
+  renderChapter();
+  openModal('bookReaderModal');
+}
+
+function renderChapter() {
+  const ch = currentBook.chapters[currentChapter];
+  document.getElementById('readerChapterTitle').textContent = ch.title;
+  document.getElementById('readerBody').innerHTML = ch.body;
+  document.getElementById('readerBody').style.fontSize = readerFontSize + 'px';
+  document.getElementById('pageInfo').textContent =
+    `Chapter ${currentChapter + 1} of ${currentBook.chapters.length}`;
+
+  // Update TOC active
+  document.querySelectorAll('.toc-item').forEach((el, i) => {
+    el.classList.toggle('active', i === currentChapter);
+  });
+
+  // Scroll to top
+  document.getElementById('readerPage').scrollTop = 0;
+
+  // Button states
+  document.getElementById('prevBtn').disabled = currentChapter === 0;
+  document.getElementById('nextBtn').disabled = currentChapter === currentBook.chapters.length - 1;
+}
+
+function goToChapter(idx) {
+  currentChapter = idx;
+  renderChapter();
+}
+
+document.getElementById('prevBtn').onclick = () => { if (currentChapter > 0) { currentChapter--; renderChapter(); }};
+document.getElementById('nextBtn').onclick = () => { if (currentChapter < (currentBook?.chapters.length - 1)) { currentChapter++; renderChapter(); }};
+document.getElementById('fontDecBtn').onclick = () => { readerFontSize = Math.max(12, readerFontSize - 1.5); document.getElementById('readerBody').style.fontSize = readerFontSize + 'px'; };
+document.getElementById('fontIncBtn').onclick = () => { readerFontSize = Math.min(22, readerFontSize + 1.5); document.getElementById('readerBody').style.fontSize = readerFontSize + 'px'; };
+document.getElementById('themeBtn').onclick = () => {
+  const page = document.getElementById('readerPage');
+  if (readerTheme === 'dark') {
+    page.style.background = '#f5f0e8'; page.style.color = '#2c1e0f';
+    document.getElementById('readerBody').style.color = '#3a2a10';
+    document.getElementById('themeBtn').textContent = '☀️ Light';
+    readerTheme = 'sepia';
+  } else if (readerTheme === 'sepia') {
+    page.style.background = ''; page.style.color = '';
+    document.getElementById('readerBody').style.color = '';
+    document.getElementById('themeBtn').textContent = '🌙 Dark';
+    readerTheme = 'dark';
+  }
+};
+</script>
+{% endblock %}
