@@ -154,7 +154,7 @@ SEMESTERS = [
 
 @app.route("/")
 def index():
-    return render_template(
+   return render_template("dashboard.html")
         "index.html",
         student=STUDENT,
         courses=COURSES,
